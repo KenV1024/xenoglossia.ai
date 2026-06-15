@@ -212,8 +212,15 @@
       </button>
     </div>
 
+    <button class="btn-cycle" id="cycle-btn" onclick="playCycle()">
+      <span id="cycle-icon">🔄</span> <span id="cycle-label">3ステップ練習（聞く → ゆっくり → 録音）</span>
+    </button>
+
     <div class="result-area" id="result-area">
       <div class="result-label" id="result-label-text">あなたの発音（認識結果）</div>
+      <div class="legend-row" id="chunk-result-legend" style="display:none;">
+        <span class="word-hit">緑</span> 正しく発音できた　<span class="word-miss">赤</span> 認識されなかった部分
+      </div>
       <div class="result-text" id="result-text"></div>
       <div class="score-row">
         <div class="score-bar-wrap"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>

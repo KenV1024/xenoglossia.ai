@@ -79,6 +79,9 @@ function stopAllAudio() {
   if (runRecognizer) { runRecognizer.abort(); setRunRecordUI(false); }
   VoiceRecorder.stop();
   rpStopAll();
+  _cycleActive = false;
+  const cb = $('cycle-btn');
+  if (cb) { cb.classList.remove('cycling'); $('cycle-label').textContent = u('3-Step Drill (listen → slow → speak)', '3ステップ練習（聞く → ゆっくり → 録音）'); $('cycle-icon').textContent = '🔄'; }
 }
 
 // ===== UI language helpers =====
@@ -523,7 +526,8 @@ async function renderPractice() {
 
   // 結果リセット / 前回スコア表示
   $('result-area').classList.remove('visible');
-  $('result-text').textContent = '';
+  $('result-text').innerHTML = '';
+  $('chunk-result-legend').style.display = 'none';
   $('score-bar').style.width = '0%';
   $('score-number').textContent = '—';
   $('score-comment').textContent = '';
@@ -532,6 +536,7 @@ async function renderPractice() {
   const prev = App.scores[stepKey(step)];
   if (prev !== undefined) {
     $('result-text').textContent = u('（前回の結果）', '(Previous best)');
+    $('chunk-result-legend').style.display = 'none';
     $('result-area').classList.add('visible');
     showChunkScore(prev);
   }
@@ -712,6 +717,48 @@ function playSlow() {
 }
 function playMyVoice() { VoiceRecorder.play(); }
 
+// ===== 3ステップ練習サイクル（Pimsleur: 通常→ゆっくり→録音）=====
+let _cycleActive = false;
+
+function playCycle() {
+  if (_cycleActive) { stopAllAudio(); return; }
+  if (!Speech.supported()) { alert('音声認識はChrome / Edgeでご利用ください。'); return; }
+
+  _cycleActive = true;
+  const btn = $('cycle-btn');
+  btn.classList.add('cycling');
+  $('cycle-icon').textContent = '⏸';
+  $('cycle-label').textContent = u('Stop', '停止');
+
+  const step = currentStep();
+  const text = App.paragraphs[step.p].chunks[step.c];
+
+  const runStep = (stepNum) => {
+    if (!_cycleActive) return;
+    if (stepNum === 1) {
+      $('cycle-label').textContent = u('Step 1/3: Listening…', '1/3 通常再生中…');
+      _speakScreen = 'screen-practice';
+      _setSpeakBtns('screen-practice', true);
+      Speech.speak(text, App.lang, 1.0, () => { if (_cycleActive) setTimeout(() => runStep(2), 500); else _setSpeakBtns('screen-practice', false); });
+    } else if (stepNum === 2) {
+      $('cycle-label').textContent = u('Step 2/3: Slow…', '2/3 ゆっくり再生中…');
+      Speech.speak(text, App.lang, 0.65, () => {
+        if (!_cycleActive) { _speakScreen = null; _setSpeakBtns('screen-practice', false); return; }
+        _speakScreen = null;
+        _setSpeakBtns('screen-practice', false);
+        setTimeout(() => runStep(3), 600);
+      });
+    } else {
+      _cycleActive = false;
+      btn.classList.remove('cycling');
+      $('cycle-icon').textContent = '🔄';
+      $('cycle-label').textContent = u('3-Step Drill (listen → slow → speak)', '3ステップ練習（聞く → ゆっくり → 録音）');
+      startChunkRecording();
+    }
+  };
+  runStep(1);
+}
+
 function toggleRecord() {
   if (chunkRecognizer && chunkRecognizer.active) {
     chunkRecognizer.stop();
@@ -740,12 +787,14 @@ function startChunkRecording() {
     continuous: false,
     onInterim: (t) => {
       $('result-text').textContent = '"' + t + '"';
+      $('chunk-result-legend').style.display = 'none';
       $('result-area').classList.add('visible');
     },
     onFinal: (transcript) => {
       VoiceRecorder.stop();
       const score = Score.calc(target, transcript, App.lang);
-      $('result-text').textContent = '"' + transcript + '"';
+      $('result-text').innerHTML = Score.highlight(target, transcript, App.lang);
+      $('chunk-result-legend').style.display = '';
       $('result-area').classList.add('visible');
       showChunkScore(score);
       App.scores[stepKey(step)] = score;
