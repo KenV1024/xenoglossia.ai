@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><title>logic test</title></head>
+<body>
+<pre id="out">running...</pre>
+<script src="../js/score.js"></script>
+<script src="../js/chunker.js"></script>
+<script src="../js/parser.js"></script>
+<script src="../js/phonics.js"></script>
+<script>
+(async () => {
+  const results = [];
+  const ok = (name, cond, detail) => results.push(`${cond ? 'PASS' : 'FAIL'}: ${name}${detail ? ' — ' + detail : ''}`);
+
+  try {
+    // ---- Parser: 日英対訳サンプル ----
+    const text = await (await fetch('sample_jp_en.txt')).text();
+    const ex = Parser.extract(text);
+    ok('JA paragraphs == 3', ex.ja.length === 3, 'got ' + ex.ja.length);
+    if (ex.ja.length !== 3) results.push('DEBUG ja paras: ' + JSON.stringify(ex.ja.map(p => p.slice(0, 12) + '...' + p.slice(-8))));
+    ok('EN paragraphs == 3', ex.en.length === 3, 'got ' + ex.en.length);
+    ok('paired detected', ex.paired === true, String(ex.paired));
+    ok('EN para1 starts correctly', (ex.en[0] || '').startsWith('On the way back'), (ex.en[0] || '').slice(0, 40));
+    ok('JA para1 starts correctly', (ex.ja[0] || '').startsWith('母は札幌'), (ex.ja[0] || '').slice(0, 20));
+    ok('JA para1 joined without spaces', !(ex.ja[0] || '').includes(' '), '');
+
+    // ---- Chunker ----
+    const enChunks = Chunker.split(ex.en[0] || '', 'en');
+    ok('EN chunks > 3', enChunks.length > 3, 'got ' + enChunks.length);
+    const jaChunks = Chunker.split(ex.ja[0] || '', 'ja');
+    ok('JA chunks > 3', jaChunks.length > 3, 'got ' + jaChunks.length);
+    ok('JA chunks reasonable length', jaChunks.every(c => c.length <= 40), JSON.stringify(jaChunks.map(c => c.length)));
+
+    // ---- Score: EN ----
+    ok('EN perfect = 100', Score.calc('I went to the store', 'I went to the store', 'en') === 100, '');
+    const enHalf = Score.calc('I went to the store yesterday', 'I went to the store', 'en');
+    ok('EN partial 70-90', enHalf >= 70 && enHalf < 100, 'got ' + enHalf);
+    ok('EN zero', Score.calc('hello world', 'completely different', 'en') === 0, '');
+
+    // ---- Score: JA（カタカナ→ひらがな吸収を含む）----
+    ok('JA perfect = 100', Score.calc('今日は天気がいいですね', '今日は天気がいいですね', 'ja') === 100, '');
+    const jaKana = Score.calc('コーヒーをください', 'こーひーをください', 'ja');
+    ok('JA katakana/hiragana >= 90', jaKana >= 90, 'got ' + jaKana);
+    const jaBad = Score.calc('今日は天気がいいですね', '全然違う文章です', 'ja');
+    ok('JA mismatch < 30', jaBad < 30, 'got ' + jaBad);
+
+    // ---- Highlight ----
+    const hl = Score.highlight('I went to the store', 'I went store', 'en');
+    ok('EN highlight has hit+miss', hl.includes('word-hit') && hl.includes('word-miss'), '');
+    const hlJa = Score.highlight('今日は天気がいい。明日は雨です。', '今日は天気がいい。', 'ja');
+    ok('JA highlight has hit+miss', hlJa.includes('word-hit') && hlJa.includes('word-miss'), '');
+
+    // ---- 単語リスト除外 ----
+    const ex2 = Parser.extract('apple\nbanana\ncherry\n\nThis is a full sentence with enough words.');
+    ok('word list excluded', ex2.en.length === 1, 'got ' + ex2.en.length + ' : ' + JSON.stringify(ex2.en));
+
+    // ---- 英語のみ貼り付け（対訳なし）----
+    const ex3 = Parser.extract('Hello, my name is Yuki. I am from Osaka. I like English.');
+    ok('plain EN extracted', ex3.en.length >= 1 && !ex3.paired, JSON.stringify(ex3.en));
+
+    // ---- Chunker: 略語の分割バグ修正確認 ----
+    const drChunks = Chunker.split('Dr. Nakamura is a great doctor. He works hard.', 'en');
+    ok('chunker: Dr. not split as sentence', drChunks[0].startsWith('Dr. Nakamura'), 'got: ' + drChunks[0]);
+    const mrChunks = Chunker.split('Mr. Smith and Mrs. Jones arrived.', 'en');
+    ok('chunker: Mr./Mrs. not split', mrChunks.length === 1, 'got ' + mrChunks.length + ' chunks');
+
+    // ---- Phonics: 発音テクニック ----
+    const p1 = Phonics.annotate('Check it out');
+    ok('phonics: check it out has 2 links', p1.links.length === 2, 'got ' + p1.links.length);
+    ok('phonics: it+out is flap T', p1.links.some(l => l.type === 'flap'), JSON.stringify(p1.links));
+
+    const p2 = Phonics.annotate('next day');
+    ok('phonics: next day drops t', p2.tokens[0].dropFinal === true, '');
+
+    const p3 = Phonics.annotate('I want to go');
+    ok('phonics: want to -> wanna tip', p3.tips.some(t => t.includes('wanna')), JSON.stringify(p3.tips));
+
+    const p4 = Phonics.annotate('I went to the store');
+    const tk = w => p4.tokens.find(t => t.w === w);
+    ok('phonics: content words stressed', tk('went').stress && tk('store').stress, '');
+    ok('phonics: function words weak', tk('i').weak && tk('to').weak && tk('the').weak, '');
+
+    ok('phonics: silent-e make+it links', Phonics.annotate('make it').links.length === 1, '');
+    ok('phonics: "one" starts consonant sound', Phonics.startsVowelSound('one') === false, '');
+    ok('phonics: "use" starts consonant sound', Phonics.startsVowelSound('use') === false, '');
+    ok('phonics: "hour" starts vowel sound', Phonics.startsVowelSound('hour') === true, '');
+
+    const ph = Phonics.renderHTML('Check it out');
+    ok('phonics: HTML has stress+link classes', ph.html.includes('ph-stress') && ph.html.includes('ph-link'), '');
+    const phDrop = Phonics.renderHTML('next day');
+    ok('phonics: HTML has drop class', phDrop.html.includes('ph-drop'), '');
+
+    const p5 = Phonics.annotate('Tell him the truth');
+    ok('phonics: h-weak in him', p5.tokens.find(t => t.w === 'him').weakH === true, '');
+  } catch (e) {
+    results.push('ERROR: ' + (e.stack || e.message));
+  }
+
+  document.getElementById('out').textContent = results.join('\n');
+})();
+</script>
+</body>
+</html>

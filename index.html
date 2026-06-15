@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4F46E5">
+  <title>Speaking Coach</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Safari / unsupported browser banner -->
+<div id="browser-banner" style="display:none;background:#FEF3C7;border-bottom:1px solid #F59E0B;padding:10px 16px;font-size:13px;line-height:1.5;text-align:center;">
+  ⚠️ このブラウザでは<strong>録音・採点機能が動作しません</strong>。<br>
+  iPhoneの方は <strong>Chrome</strong>（<a href="https://apps.apple.com/jp/app/google-chrome/id535886823" target="_blank" rel="noopener" style="color:#B45309;">App Storeからダウンロード</a>）でお試しください。
+  <button onclick="this.parentElement.style.display='none'" style="margin-left:12px;background:none;border:1px solid #B45309;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;color:#B45309;">閉じる</button>
+</div>
+<script>
+(function(){
+  const hasSpeech = ('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window);
+  if (!hasSpeech) document.getElementById('browser-banner').style.display = 'block';
+})();
+</script>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-titles">
+    <h1>Speaking Coach</h1>
+    <p>英語・日本語の会話練習アプリ</p>
+  </div>
+  <div class="header-btns">
+    <button class="icon-btn" onclick="goHome()" title="ホーム">🏠</button>
+    <button class="icon-btn" onclick="openSettings()" title="設定">⚙</button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-text">処理中...</p>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box">
+    <h3>⚙ 設定</h3>
+    <div class="field-label">Claude APIキー（AI会話生成・高品質翻訳に使用）</div>
+    <div class="key-status none" id="key-status">未設定</div>
+    <input type="password" class="text-input" id="api-key-input" placeholder="sk-ant-api03-...">
+    <div class="modal-note">
+      キーは<strong>この端末のブラウザ内にのみ</strong>保存され、外部には送信されません（Anthropic APIへの通信を除く）。
+      キーは <a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a> で取得できます。
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeSettings()">閉じる</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen: Home ===== -->
+<div class="screen active" id="screen-home">
+  <div class="container">
+
+    <div class="resume-banner" id="resume-banner" style="display:none;">
+      <div class="resume-info" id="resume-info">前回の練習があります</div>
+      <button onclick="resumeSession()">続きから</button>
+    </div>
+
+    <div class="home-card">
+      <h2>📄 テキストから練習</h2>
+      <div class="card-desc">ファイルを読み込むか、テキストを貼り付けて練習を始めます。日本語と英語が混ざった文書からは自動で抽出します。</div>
+
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">📂</div>
+        <div class="dz-main">ファイルをドラッグ&ドロップ / クリックして選択</div>
+        <div class="dz-sub">対応形式: txt / docx / PDF</div>
+        <div class="dz-file" id="dz-file"></div>
+      </div>
+      <input type="file" id="file-input" accept=".txt,.md,.text,.docx,.pdf" style="display:none;">
+
+      <div class="textarea-wrapper">
+        <textarea id="input-text" placeholder="またはここにテキストを貼り付け&#10;例: Hello, my name is Taro. I am from Tokyo, Japan."></textarea>
+      </div>
+      <button class="sample-btn" onclick="loadSample()">サンプルテキストを入れる</button>
+
+      <div class="option-row">
+        <label>練習する言語:</label>
+        <div class="seg-group" id="lang-seg">
+          <button class="seg-btn active" data-lang="auto" onclick="setLang('auto')">自動</button>
+          <button class="seg-btn" data-lang="en" onclick="setLang('en')">英語</button>
+          <button class="seg-btn" data-lang="ja" onclick="setLang('ja')">日本語</button>
+        </div>
+      </div>
+
+      <div class="error-box" id="home-error"></div>
+
+      <button class="btn btn-primary" id="start-btn" onclick="startTextPractice()">練習を開始する →</button>
+    </div>
+
+    <div class="home-card">
+      <h2>🤖 AI会話シーンで練習</h2>
+      <div class="card-desc">トピックとレベルを選ぶと、AIが自然な会話シーンを生成。ロールプレイで実際の会話に近い練習ができます。<span id="ai-key-hint"></span></div>
+      <button class="btn btn-ghost" onclick="goToSceneSetup()">会話シーンを作る →</button>
+    </div>
+
+    <div class="tips">
+      <h3>使い方のヒント</h3>
+      <ul>
+        <li>チャンク練習 → パラグラフ通し → 全文通し、の順に階段式で練習できます</li>
+        <li>まず「ゆっくり再生」で音を確認し、真似して話しましょう</li>
+        <li>録音すると採点され、自分の声の聞き返しもできます（Chrome / Edge推奨）</li>
+        <li>ゴールは30分の対人ネイティブ会話。ロールプレイの「セリフを隠す」が実戦練習です</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen: List (paragraph accordion) ===== -->
+<div class="screen" id="screen-list">
+  <div class="container">
+    <div class="list-top">
+      <h2 id="list-title">練習メニュー</h2>
+      <button onclick="goHome()">← ホーム</button>
+    </div>
+
+    <div class="progress-label">
+      <span id="list-progress-text">練習済み: 0 / 0</span>
+      <span id="list-progress-pct">0%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="list-progress-fill" style="width:0%"></div>
+    </div>
+
+    <button class="btn-full-mode" id="start-flow-btn" onclick="startFlowFromBeginning()">最初から順番に練習する →</button>
+    <button class="btn-review-mode" id="review-btn" style="display:none;" onclick="startReviewMode()">🔁 苦手チャンクだけ復習する</button>
+
+    <div id="para-list"></div>
+
+    <button class="btn-full-mode" id="full-mode-btn" style="margin-top:8px;" onclick="goToStep({type:'full'})">全文を通して練習する →</button>
+  </div>
+</div>
+
+<!-- ===== Screen: Chunk Practice ===== -->
+<div class="screen" id="screen-practice">
+  <div class="container">
+    <div class="practice-top">
+      <button class="back-btn" id="practice-back-btn" onclick="showScreen('list')">← 一覧</button>
+      <span class="chunk-counter" id="chunk-counter"></span>
+    </div>
+
+    <div class="progress-label">
+      <span></span>
+      <span id="practice-progress-pct">0%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="practice-progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="completion-banner" id="completion-banner">
+      <div class="congrats-icon">🎉</div>
+      <h3 id="completion-h3">すべての練習が完了！</h3>
+      <p id="completion-p">お疲れ様でした。一覧から苦手なチャンクを重点的に復習しましょう。</p>
+    </div>
+
+    <span class="step-tag tag-chunk" id="practice-tag">チャンク練習</span>
+
+    <div class="guide-toggle-row" id="guide-toggle-row">
+      <span class="guide-toggle-label" id="guide-toggle-label">🔤 発音ガイド</span>
+      <button class="guide-toggle" id="guide-toggle" onclick="toggleGuide()">ON</button>
+    </div>
+
+    <div class="chunk-display">
+      <div class="english-text" id="practice-target"></div>
+
+      <!-- ローマ字表示（日本語練習時のみ表示） -->
+      <div class="romaji-row" id="romaji-row" style="display:none;">
+        <div class="romaji-label">ローマ字 (Romaji)</div>
+        <div class="romaji-text" id="romaji-text"></div>
+      </div>
+
+      <div class="ph-legend" id="ph-legend">
+        <span><span class="lg-dot">●</span>強く読む</span>
+        <span><span class="lg-weak">グレー</span>弱く読む</span>
+        <span><span class="lg-arc"></span>つなげる</span>
+        <span><span class="lg-drop">t</span>消える音</span>
+        <span><span class="lg-flap">t</span>ラ行の音</span>
+      </div>
+      <div class="ph-tips" id="ph-tips"></div>
+      <hr class="divider">
+      <div class="translation-label" id="practice-trans-label">訳</div>
+      <div class="japanese-text" id="practice-translation"><span class="loading-text">翻訳中...</span></div>
+      <span class="word-count" id="word-count"></span>
+    </div>
+
+    <div class="action-buttons four">
+      <button class="action-btn btn-play" onclick="playNormal()">
+        <span class="action-icon">▶</span><span id="play-label">再生</span>
+      </button>
+      <button class="action-btn btn-slow" onclick="playSlow()">
+        <span class="action-icon">🐢</span><span id="slow-label">ゆっくり</span>
+      </button>
+      <button class="action-btn btn-record" id="record-btn" onclick="toggleRecord()">
+        <span class="action-icon">🎤</span><span id="record-label">録音</span>
+      </button>
+      <button class="action-btn btn-myvoice" id="myvoice-btn" onclick="playMyVoice()" disabled>
+        <span class="action-icon">🔁</span><span id="myvoice-label">自分の声</span>
+      </button>
+    </div>
+
+    <div class="result-area" id="result-area">
+      <div class="result-label" id="result-label-text">あなたの発音（認識結果）</div>
+      <div class="result-text" id="result-text"></div>
+      <div class="score-row">
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+        <div class="score-number" id="score-number">—</div>
+      </div>
+      <div class="score-comment" id="score-comment"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="prev-btn" onclick="navigate(-1)">← 前へ</button>
+      <button class="btn-nav" id="next-btn" onclick="navigate(1)">次へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen: Run-through (paragraph / full) ===== -->
+<div class="screen" id="screen-run">
+  <div class="container">
+    <div class="practice-top">
+      <button class="back-btn" id="run-back-btn" onclick="showScreen('list')">← 一覧</button>
+      <span class="chunk-counter">
+        <span id="run-title">通し練習</span>
+        <span class="best-score-tag" id="run-best-tag"></span>
+      </span>
+    </div>
+
+    <span class="step-tag tag-para" id="run-tag">パラグラフ通し練習</span>
+
+    <div class="chunk-display">
+      <div class="full-text-display" id="run-text"></div>
+    </div>
+
+    <div class="action-buttons" style="grid-template-columns:1fr 1fr; margin-bottom:10px;">
+      <button class="action-btn btn-play" onclick="playRunNormal()">
+        <span class="action-icon">▶</span><span id="run-play-label">再生</span>
+      </button>
+      <button class="action-btn btn-slow" onclick="playRunSlow()">
+        <span class="action-icon">🐢</span><span id="run-slow-label">ゆっくり</span>
+      </button>
+    </div>
+
+    <button class="btn-full-record" id="run-record-btn" onclick="toggleRunRecord()">
+      <span class="rec-icon">🎤</span>
+      <span id="run-record-label">録音する</span>
+    </button>
+
+    <div class="interim-box" id="run-interim-box">
+      <div class="interim-label" id="run-interim-label">認識中…</div>
+      <div id="run-interim"></div>
+    </div>
+
+    <div class="result-area" id="run-result-area">
+      <div class="result-label" id="run-result-label-text">発音結果</div>
+      <div class="legend-row" id="run-result-legend">
+        <span style="background:#DCFCE7;color:#15803D;" id="run-legend-green">緑</span><span id="run-legend-green-text">正しく発音できた</span>
+        <span style="background:#FEE2E2;color:#B91C1C;text-decoration:line-through;" id="run-legend-red">赤</span><span id="run-legend-red-text">認識されなかった部分</span>
+      </div>
+      <div class="full-text-display" id="run-highlighted" style="font-size:16px;margin-bottom:16px;"></div>
+      <div class="score-row">
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="run-score-bar" style="width:0%"></div></div>
+        <div class="score-number" id="run-score-number">—</div>
+      </div>
+      <div class="score-comment" id="run-score-comment"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="run-prev-btn" onclick="navigate(-1)">← 前へ</button>
+      <button class="btn-nav" id="run-next-btn" onclick="navigate(1)">次へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen: AI Scene Setup ===== -->
+<div class="screen" id="screen-scene">
+  <div class="container">
+    <div class="list-top">
+      <h2>🤖 AI会話シーンを作る</h2>
+      <button onclick="goHome()">← ホーム</button>
+    </div>
+
+    <div class="home-card">
+      <div class="field-label">トピックを選ぶ</div>
+      <div class="topic-grid" id="topic-grid"></div>
+      <input type="text" class="text-input" id="topic-input" placeholder="または自由に入力（例: 美容院で髪型を相談する）">
+
+      <div class="option-row">
+        <label>言語:</label>
+        <div class="seg-group" id="scene-lang-seg">
+          <button class="seg-btn active" data-val="en" onclick="setSceneOpt('lang','en')">英語</button>
+          <button class="seg-btn" data-val="ja" onclick="setSceneOpt('lang','ja')">日本語</button>
+        </div>
+      </div>
+      <div class="option-row">
+        <label>レベル:</label>
+        <div class="seg-group" id="scene-level-seg">
+          <button class="seg-btn" data-val="beginner" onclick="setSceneOpt('level','beginner')">初級</button>
+          <button class="seg-btn active" data-val="intermediate" onclick="setSceneOpt('level','intermediate')">中級</button>
+          <button class="seg-btn" data-val="advanced" onclick="setSceneOpt('level','advanced')">上級</button>
+        </div>
+      </div>
+
+      <div class="error-box" id="scene-error"></div>
+      <button class="btn btn-primary" id="generate-btn" onclick="generateScene()">会話を生成する ✨</button>
+    </div>
+
+    <!-- 生成結果プレビュー -->
+    <div id="scene-preview" style="display:none;">
+      <div class="home-card">
+        <h2 id="scene-title"></h2>
+        <div class="card-desc" id="scene-desc"></div>
+        <div class="turn-list" id="turn-list"></div>
+        <button class="btn btn-secondary" style="margin-bottom:10px;" onclick="extendScene()">この続きを生成する +</button>
+        <div class="field-label">練習方法を選ぶ</div>
+        <button class="btn btn-primary" style="margin-bottom:10px;" onclick="sceneToChunkPractice()">📚 チャンク練習（全セリフを順番に）</button>
+        <button class="btn btn-primary" onclick="goToRoleplaySetup()">🎭 ロールプレイ（相手と会話する）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen: Roleplay ===== -->
+<div class="screen" id="screen-roleplay">
+  <div class="container">
+    <div class="practice-top">
+      <button class="back-btn" onclick="exitRoleplay()">← 会話シーン</button>
+      <span class="chunk-counter" id="rp-counter"></span>
+    </div>
+
+    <!-- 役選択 -->
+    <div id="rp-setup">
+      <div class="home-card">
+        <h2>🎭 ロールプレイ設定</h2>
+        <div class="card-desc">あなたが演じる役を選んでください。相手役のセリフはアプリが音声で話します。</div>
+        <div class="field-label">あなたの役</div>
+        <div class="option-row">
+          <div class="seg-group" id="rp-role-seg">
+            <button class="seg-btn active" data-val="A" onclick="setRpRole('A')">A役</button>
+            <button class="seg-btn" data-val="B" onclick="setRpRole('B')">B役</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <label><input type="checkbox" id="rp-hide-text"> セリフを隠す（上級: 音声だけで会話）</label>
+        </div>
+        <button class="btn btn-primary" onclick="startRoleplay()">ロールプレイ開始 →</button>
+      </div>
+    </div>
+
+    <!-- 進行中 -->
+    <div id="rp-stage-wrap" style="display:none;">
+      <div class="rp-progress" id="rp-progress"></div>
+      <div class="rp-stage">
+        <span class="rp-status" id="rp-status"></span>
+        <div class="rp-line" id="rp-line"></div>
+        <div class="rp-translation" id="rp-translation"></div>
+        <div class="rp-result" id="rp-result">
+          <div class="result-label">あなたの発音</div>
+          <div class="result-text" id="rp-result-text"></div>
+          <div class="score-row">
+            <div class="score-bar-wrap"><div class="score-bar-fill" id="rp-score-bar" style="width:0%"></div></div>
+            <div class="score-number" id="rp-score-number">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="rp-controls">
+        <button class="btn-nav" onclick="rpReplayPartner()">🔊 もう一度聞く</button>
+        <button class="btn-nav" id="rp-retry-btn" onclick="rpRetry()">🎤 やり直す</button>
+        <button class="btn-nav next-special" id="rp-next-btn" onclick="rpNext()">次へ →</button>
+      </div>
+      <button class="btn btn-secondary" id="rp-hint-btn" style="display:none;" onclick="rpShowHint()">💡 セリフを見る</button>
+    </div>
+
+    <!-- 結果 -->
+    <div id="rp-summary" style="display:none;">
+      <div class="completion-banner visible">
+        <div class="congrats-icon">🎉</div>
+        <h3>ロールプレイ完了！</h3>
+        <p id="rp-summary-avg"></p>
+      </div>
+      <div class="rp-summary-list" id="rp-summary-list"></div>
+      <div class="nav-buttons" style="margin-bottom:10px;">
+        <button class="btn-nav" onclick="startRoleplay()">🔁 もう一度</button>
+        <button class="btn-nav" onclick="rpSwapRole()">🔄 役を交代</button>
+      </div>
+      <button class="btn btn-primary" onclick="exitRoleplay()">会話シーンに戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- Libraries -->
+<script src="lib/pdf.min.js"></script>
+<script src="lib/mammoth.browser.min.js"></script>
+
+<!-- App modules -->
+<script src="js/storage.js"></script>
+<script src="js/score.js"></script>
+<script src="js/phonics.js"></script>
+<script src="js/romaji.js"></script>
+<script src="js/chunker.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>

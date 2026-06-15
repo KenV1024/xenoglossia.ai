@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><title>flow test</title></head>
+<body>
+<pre id="out">running...</pre>
+<iframe id="f" src="../index.html" style="width:1px;height:1px;"></iframe>
+<script>
+const f = document.getElementById('f');
+f.onload = async () => {
+  const w = f.contentWindow;
+  const d = w.document;
+  const results = [];
+  const ok = (n, c, detail) => results.push(`${c ? 'PASS' : 'FAIL'}: ${n}${detail !== undefined ? ' — ' + detail : ''}`);
+  try {
+    const text = await (await fetch('sample_jp_en.txt')).text();
+
+    // ---- 英語モード（自動判定）----
+    d.getElementById('input-text').value = text;
+    w.App.fileText = null;
+    w.setLang('auto');
+    w.startTextPractice();
+    ok('lang auto -> en', w.App.lang === 'en');
+    ok('3 paragraphs', w.App.paragraphs.length === 3, w.App.paragraphs.length);
+    ok('paired translations set', w.App.paragraphs.every(p => p.translation), '');
+
+    const flow = w.App.flow;
+    ok('para steps == 3', flow.filter(s => s.type === 'para').length === 3);
+    ok('full step == 1', flow.filter(s => s.type === 'full').length === 1);
+    const pi = flow.findIndex(s => s.type === 'para');
+    ok('para step sits after last chunk of para0',
+      flow[pi - 1].type === 'chunk' && flow[pi - 1].p === 0 &&
+      flow[pi].p === 0 && flow[pi + 1].type === 'chunk' && flow[pi + 1].p === 1);
+    ok('full step is last', flow[flow.length - 1].type === 'full');
+
+    // ---- 画面遷移 ----
+    // ネットワーク翻訳をスタブ化（テストを決定的にする → 段落対訳フォールバックを検証）
+    w.FreeTranslate.translate = async () => '（翻訳を取得できませんでした）';
+    w.Store.setGuideOn(true);
+
+    w.goToStep({ type: 'chunk', p: 0, c: 0 });
+    ok('chunk -> practice screen', d.getElementById('screen-practice').classList.contains('active'));
+    await new Promise(r => setTimeout(r, 200));
+    ok('paired translation shown (fallback)', d.getElementById('practice-translation').textContent.includes('母は札幌'),
+      d.getElementById('practice-translation').textContent.slice(0, 20));
+
+    // ---- 発音ガイド（英語） ----
+    ok('guide toggle visible (en)', d.getElementById('guide-toggle-row').style.display !== 'none');
+    ok('annotated text rendered', d.getElementById('practice-target').innerHTML.includes('ph-word'));
+    ok('tips rendered', d.getElementById('ph-tips').innerHTML.includes('ph-tip'));
+    w.toggleGuide();
+    ok('guide OFF -> plain text', !d.getElementById('practice-target').innerHTML.includes('ph-word'));
+    w.toggleGuide();
+    ok('guide ON again -> annotated', d.getElementById('practice-target').innerHTML.includes('ph-word'));
+
+    const lastChunk = w.App.paragraphs[0].chunks.length - 1;
+    w.goToStep({ type: 'chunk', p: 0, c: lastChunk });
+    w.navigate(1);
+    ok('after last chunk -> run screen', d.getElementById('screen-run').classList.contains('active'));
+    ok('run text = paragraph text', d.getElementById('run-text').textContent.startsWith('On the way back'));
+
+    w.goToStep({ type: 'full' });
+    ok('full text long', d.getElementById('run-text').textContent.length > 500,
+      d.getElementById('run-text').textContent.length);
+
+    // ---- 採点保存・一覧 ----
+    w.App.scores['c:0:0'] = 85;
+    w.App.scores['c:0:1'] = 40;
+    w.showScreen('list');
+    ok('list shows progress', d.getElementById('list-progress-text').textContent.includes('2 /'));
+    ok('review button visible (score<60 exists)', d.getElementById('review-btn').style.display !== 'none');
+
+    // ---- 日本語モード ----
+    w.setLang('ja');
+    w.startTextPractice();
+    ok('ja: 3 paragraphs', w.App.paragraphs.length === 3, w.App.paragraphs.length);
+    ok('ja: chunks contain no half-width spaces', w.App.paragraphs[0].chunks.every(c => !c.includes(' ')));
+    ok('ja: translation is EN', (w.App.paragraphs[0].translation || '').startsWith('On the way'));
+
+    w.goToStep({ type: 'chunk', p: 0, c: 0 });
+    ok('ja: guide toggle hidden', d.getElementById('guide-toggle-row').style.display === 'none');
+    ok('ja: plain text shown', !d.getElementById('practice-target').innerHTML.includes('ph-word'));
+
+    // ---- ロールプレイ用シーンのチャンク化（API呼び出しなしの疑似シーン）----
+    w.App.scene = {
+      title: 'テスト会話', scene: 'テスト', lang: 'en', level: 'beginner', topic: 'test',
+      turns: [
+        { speaker: 'A', text: 'Hello, how are you today?', translation: 'こんにちは、元気ですか？' },
+        { speaker: 'B', text: 'I am fine, thank you. And you?', translation: '元気です、ありがとう。あなたは？' },
+        { speaker: 'A', text: 'Great. Shall we get started?', translation: 'いいですね。始めましょうか？' }
+      ]
+    };
+    w.sceneToChunkPractice();
+    ok('scene -> 3 paragraphs', w.App.paragraphs.length === 3);
+    ok('scene list title', d.getElementById('list-title').textContent.includes('テスト会話'));
+
+    w.goToRoleplaySetup();
+    ok('roleplay screen active', d.getElementById('screen-roleplay').classList.contains('active'));
+
+    w.Store.clearSession(); // テストデータを残さない
+  } catch (e) {
+    results.push('ERROR: ' + (e.stack || e.message));
+  }
+  document.getElementById('out').textContent = results.join('\n');
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Speaking Coach</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: #F0F4FF;
+      color: #1E293B;
+      min-height: 100vh;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== Header ===== */
+    .header {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      color: white;
+      padding: 18px 20px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(79,70,229,0.3);
+    }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+    .header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    /* ===== Container ===== */
+    .container { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    /* ===== Buttons ===== */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      font-family: inherit;
+    }
+    .btn-primary { background: #4F46E5; color: white; }
+    .btn-primary:hover { background: #4338CA; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,70,229,0.35); }
+    .btn-primary:disabled { background: #A5B4FC; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary { background: #E2E8F0; color: #475569; }
+    .btn-secondary:hover { background: #CBD5E1; }
+
+    /* ===== Input Screen ===== */
+    .input-intro {
+      text-align: center;
+      margin: 24px 0 20px;
+    }
+    .input-intro h2 { font-size: 20px; font-weight: 700; color: #4F46E5; margin-bottom: 8px; }
+    .input-intro p { color: #64748B; font-size: 14px; line-height: 1.65; }
+
+    .textarea-wrapper {
+      background: white;
+      border: 2px solid #E2E8F0;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+    .textarea-wrapper:focus-within { border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.7;
+      border: none;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      color: #1E293B;
+    }
+    textarea::placeholder { color: #94A3B8; }
+
+    .sample-btn {
+      background: none;
+      border: none;
+      color: #4F46E5;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-bottom: 16px;
+      font-family: inherit;
+    }
+
+    .tips {
+      margin-top: 20px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px 18px;
+      border: 1px solid #E2E8F0;
+    }
+    .tips h3 { font-size: 13px; font-weight: 700; color: #4F46E5; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tips ul { list-style: none; }
+    .tips li {
+      font-size: 13px;
+      color: #64748B;
+      margin-bottom: 7px;
+      padding-left: 18px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .tips li::before { content: '✓'; position: absolute; left: 0; color: #10B981; font-weight: 700; }
+
+    /* ===== Progress ===== */
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .progress-wrap {
+      background: #E2E8F0;
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, #4F46E5, #7C3AED);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+
+    /* ===== List Screen ===== */
+    .list-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .list-top h2 { font-size: 18px; font-weight: 700; }
+    .list-top button {
+      background: none;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: #475569;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .list-top button:hover { background: #F8FAFC; border-color: #CBD5E1; }
+
+    .chunks-grid { display: grid; gap: 10px; }
+
+    .chunk-card {
+      background: white;
+      border: 2px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .chunk-card:hover { border-color: #4F46E5; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,0.1); }
+    .chunk-card.done { border-color: #10B981; background: #F0FDF4; }
+
+    .chunk-num {
+      min-width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #EEF2FF;
+      color: #4F46E5;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .chunk-card.done .chunk-num { background: #10B981; color: white; }
+
+    .chunk-preview { flex: 1; }
+    .chunk-preview-en { font-size: 14px; color: #1E293B; line-height: 1.5; margin-bottom: 3px; }
+    .chunk-preview-ja { font-size: 12px; color: #64748B; line-height: 1.4; }
+
+    .chunk-score-badge {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-great { background: #DCFCE7; color: #15803D; }
+    .badge-ok    { background: #FEF9C3; color: #A16207; }
+    .badge-low   { background: #FEE2E2; color: #B91C1C; }
+
+    /* ===== Practice Screen ===== */
+    .practice-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: #4F46E5;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+    }
+    .chunk-counter { font-size: 14px; color: #64748B; font-weight: 600; }
+
+    .chunk-display {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .english-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1E293B;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .divider { border: none; border-top: 1px solid #F1F5F9; margin-bottom: 14px; }
+
+    .translation-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #94A3B8;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .japanese-text { font-size: 16px; color: #475569; line-height: 1.65; }
+    .loading-text { color: #94A3B8; font-size: 14px; }
+
+    .word-count {
+      display: inline-block;
+      font-size: 12px;
+      color: #94A3B8;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-top: 14px;
+    }
+
+    /* ===== Action Buttons ===== */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .action-btn {
+      padding: 12px 6px;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .action-icon { font-size: 22px; line-height: 1; }
+
+    .btn-play  { background: #EEF2FF; color: #4F46E5; border-color: #C7D2FE; }
+    .btn-play:hover  { background: #4F46E5; color: white; border-color: #4F46E5; }
+
+    .btn-slow  { background: #FFF7ED; color: #EA580C; border-color: #FED7AA; }
+    .btn-slow:hover  { background: #EA580C; color: white; border-color: #EA580C; }
+
+    .btn-record { background: #FFF1F2; color: #E11D48; border-color: #FECDD3; }
+    .btn-record:hover { background: #E11D48; color: white; border-color: #E11D48; }
+    .btn-record.recording { background: #E11D48; color: white; border-color: #E11D48; animation: pulse 1.2s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.65} }
+
+    /* ===== Result Area ===== */
+    .result-area {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid #E2E8F0;
+      display: none;
+    }
+    .result-area.visible { display: block; }
+
+    .result-label { font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; margin-bottom: 8px; }
+    .result-text { font-size: 15px; color: #1E293B; line-height: 1.5; margin-bottom: 14px; font-style: italic; }
+
+    .score-row { display: flex; align-items: center; gap: 12px; }
+    .score-bar-wrap { flex: 1; background: #E2E8F0; border-radius: 999px; height: 12px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 999px; transition: width 0.7s cubic-bezier(.22,1,.36,1); }
+    .score-number { font-size: 22px; font-weight: 800; min-width: 56px; text-align: right; }
+    .score-comment { font-size: 12px; color: #64748B; margin-top: 6px; text-align: right; }
+
+    /* ===== Navigation ===== */
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-nav {
+      padding: 13px;
+      border: 2px solid #E2E8F0;
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-nav:hover { border-color: #4F46E5; color: #4F46E5; }
+    .btn-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ===== Completion ===== */
+    .completion-banner {
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: white;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .completion-banner.visible { display: block; }
+    .completion-banner .congrats-icon { font-size: 36px; margin-bottom: 8px; }
+    .completion-banner h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .completion-banner p { font-size: 13px; opacity: 0.92; line-height: 1.6; }
+
+    /* ===== Loading Overlay ===== */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .loading-overlay.visible { display: flex; }
+    .loading-box {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 36px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid #E2E8F0;
+      border-top-color: #4F46E5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box p { font-size: 14px; color: #64748B; }
+
+    /* ===== Word Highlight ===== */
+    .word-hit  { background: #DCFCE7; color: #15803D; border-radius: 3px; padding: 0 3px; }
+    .word-miss { background: #FEE2E2; color: #B91C1C; border-radius: 3px; padding: 0 3px; text-decoration: line-through; }
+
+    /* ===== Full Practice Button (on list) ===== */
+    .btn-full-mode {
+      display: block; width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #7C3AED, #4F46E5);
+      color: white; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      margin-bottom: 16px; font-family: inherit;
+      transition: all 0.18s;
+    }
+    .btn-full-mode:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,70,229,0.35); }
+
+    /* ===== Full Practice Screen ===== */
+    .full-text-display { font-size: 17px; line-height: 1.95; color: #1E293B; word-break: break-word; }
+
+    .btn-full-record {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 15px; border: 2px solid #FECDD3;
+      border-radius: 12px; background: #FFF1F2; color: #E11D48;
+      font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+      margin-bottom: 14px; transition: all 0.15s;
+    }
+    .btn-full-record:hover { background: #E11D48; color: white; border-color: #E11D48; }
+    .btn-full-record.recording { background: #E11D48; color: white; border-color: #E11D48; animation: pulse 1.2s infinite; }
+    .btn-full-record .rec-icon { font-size: 20px; }
+
+    .interim-box {
+      background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 14px;
+      font-size: 14px; color: #475569; line-height: 1.6; min-height: 48px;
+      display: none; font-style: italic;
+    }
+    .interim-box.visible { display: block; }
+
+    .best-score-tag {
+      display: none; font-size: 12px; color: #7C3AED; font-weight: 600;
+      background: #F5F3FF; border-radius: 999px; padding: 2px 10px;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    .legend-row { font-size: 12px; color: #94A3B8; margin-bottom: 12px; }
+    .legend-row span { border-radius: 3px; padding: 1px 6px; margin-right: 8px; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 400px) {
+      .english-text { font-size: 18px; }
+      .action-icon { font-size: 18px; }
+      .action-btn { font-size: 11px; padding: 10px 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>English Speaking Coach</h1>
+  <p>チャンク学習で英会話をマスターしよう</p>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p>チャンクに分割・翻訳中...</p>
+  </div>
+</div>
+
+<!-- ===== Screen 1: Input ===== -->
+<div class="screen active" id="screen-input">
+  <div class="container">
+    <div class="input-intro">
+      <h2>英語テキストを貼り付けてください</h2>
+      <p>意味のかたまり（チャンク）ごとに分けて、<br>日本語訳を確認しながら発音練習ができます。</p>
+    </div>
+
+    <div class="textarea-wrapper">
+      <textarea id="input-text" placeholder="例: Hello, my name is Taro. I am from Tokyo, Japan. I have been studying English for three years, but I still find it difficult to speak."></textarea>
+    </div>
+
+    <button class="sample-btn" onclick="loadSample()">サンプルテキストを入れる</button>
+
+    <button class="btn btn-primary" id="start-btn" onclick="startPractice()">
+      練習を開始する →
+    </button>
+
+    <div class="tips">
+      <h3>使い方のヒント</h3>
+      <ul>
+        <li>ニュース・ドラマのセリフ・スピーチなど何でもOK</li>
+        <li>まず「ゆっくり再生」で音を確認し、真似して話す</li>
+        <li>「録音」ボタンで発音を採点できます（Chrome推奨）</li>
+        <li>スコア80%以上を目標にくり返し練習しましょう</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen 2: Chunk List ===== -->
+<div class="screen" id="screen-list">
+  <div class="container">
+    <div class="list-top">
+      <h2>チャンク一覧</h2>
+      <button onclick="showScreen('input')">← テキストを変える</button>
+    </div>
+
+    <div class="progress-label">
+      <span id="list-progress-text">練習済み: 0 / 0</span>
+      <span id="list-progress-pct">0%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="list-progress-fill" style="width:0%"></div>
+    </div>
+
+    <button class="btn-full-mode" onclick="goToFullPractice()">
+      全文を通して練習する →
+    </button>
+
+    <div class="chunks-grid" id="chunks-grid"></div>
+  </div>
+</div>
+
+<!-- ===== Screen 3: Practice ===== -->
+<div class="screen" id="screen-practice">
+  <div class="container">
+    <div class="practice-top">
+      <button class="back-btn" onclick="showScreen('list')">← 一覧</button>
+      <span class="chunk-counter" id="chunk-counter">チャンク 1 / 1</span>
+    </div>
+
+    <div class="progress-label">
+      <span></span>
+      <span id="practice-progress-pct">0%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="practice-progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="completion-banner" id="completion-banner">
+      <div class="congrats-icon">🎉</div>
+      <h3>全チャンク練習完了！</h3>
+      <p>お疲れ様でした。繰り返し練習するとさらに上達します。<br>一覧から苦手なチャンクを重点的に練習しましょう。</p>
+    </div>
+
+    <div class="chunk-display">
+      <div class="english-text" id="practice-english"></div>
+      <hr class="divider">
+      <div class="translation-label">日本語訳</div>
+      <div class="japanese-text" id="practice-japanese">
+        <span class="loading-text">翻訳中...</span>
+      </div>
+      <span class="word-count" id="word-count">0 語</span>
+    </div>
+
+    <div class="action-buttons">
+      <button class="action-btn btn-play" onclick="playNormal()">
+        <span class="action-icon">▶</span>
+        <span>再生</span>
+      </button>
+      <button class="action-btn btn-slow" onclick="playSlow()">
+        <span class="action-icon">🐢</span>
+        <span>ゆっくり</span>
+      </button>
+      <button class="action-btn btn-record" id="record-btn" onclick="toggleRecord()">
+        <span class="action-icon">🎤</span>
+        <span id="record-label">録音</span>
+      </button>
+    </div>
+
+    <div class="result-area" id="result-area">
+      <div class="result-label">あなたの発音（認識結果）</div>
+      <div class="result-text" id="result-text"></div>
+      <div class="score-row">
+        <div class="score-bar-wrap">
+          <div class="score-bar-fill" id="score-bar" style="width:0%"></div>
+        </div>
+        <div class="score-number" id="score-number">—</div>
+      </div>
+      <div class="score-comment" id="score-comment"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="prev-btn" onclick="navigate(-1)">← 前へ</button>
+      <button class="btn-nav" id="next-btn" onclick="navigate(1)">次へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Screen 4: Full Text Practice ===== -->
+<div class="screen" id="screen-full">
+  <div class="container">
+    <div class="practice-top">
+      <button class="back-btn" onclick="showScreen('list')">← 一覧</button>
+      <span class="chunk-counter">
+        全文練習
+        <span class="best-score-tag" id="full-best-tag"></span>
+      </span>
+    </div>
+
+    <div class="chunk-display">
+      <div class="full-text-display" id="full-text-display"></div>
+    </div>
+
+    <div class="action-buttons" style="grid-template-columns:1fr 1fr; margin-bottom:10px;">
+      <button class="action-btn btn-play" onclick="playFullNormal()">
+        <span class="action-icon">▶</span>
+        <span>全文再生</span>
+      </button>
+      <button class="action-btn btn-slow" onclick="playFullSlow()">
+        <span class="action-icon">🐢</span>
+        <span>ゆっくり</span>
+      </button>
+    </div>
+
+    <button class="btn-full-record" id="full-record-btn" onclick="toggleFullRecord()">
+      <span class="rec-icon">🎤</span>
+      <span id="full-record-label">全文を録音する</span>
+    </button>
+
+    <div class="interim-box" id="full-interim-box">
+      <div style="font-size:11px;color:#94A3B8;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px;font-style:normal;">認識中…</div>
+      <div id="full-interim"></div>
+    </div>
+
+    <div class="result-area" id="full-result-area">
+      <div class="result-label">発音結果（単語ごとの採点）</div>
+      <div class="legend-row">
+        <span style="background:#DCFCE7;color:#15803D;">緑</span>正しく発音できた
+        <span style="background:#FEE2E2;color:#B91C1C;text-decoration:line-through;">赤</span>認識されなかった単語
+      </div>
+      <div class="full-text-display" id="full-highlighted" style="font-size:16px;margin-bottom:16px;"></div>
+      <div class="score-row">
+        <div class="score-bar-wrap">
+          <div class="score-bar-fill" id="full-score-bar" style="width:0%"></div>
+        </div>
+        <div class="score-number" id="full-score-number">—</div>
+      </div>
+      <div class="score-comment" id="full-score-comment"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== State =====
+  let chunks = [];
+  let currentIndex = 0;
+  let translationCache = {};
+  let practiceScores = {};
+  let isRecording = false;
+  let recognition = null;
+  let voices = [];
+
+  // ===== Screen =====
+  function showScreen(name) {
+    speechSynthesis.cancel();
+    if (isRecording) stopRecording();
+    if (typeof isFullRecording !== 'undefined' && isFullRecording) stopFullRecording();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    if (name === 'list') updateListUI();
+  }
+
+  // ===== Sample Text =====
+  function loadSample() {
+    document.getElementById('input-text').value =
+      "Hello, my name is Yuki Tanaka. I am from Osaka, Japan. " +
+      "I have been learning English for two years, but I still struggle with speaking. " +
+      "My goal is to have a natural conversation with native speakers. " +
+      "I practice every day by listening to podcasts and watching movies in English. " +
+      "I believe that with consistent practice, anyone can improve their English skills.";
+  }
+
+  // ===== Chunk Splitting =====
+  function splitIntoChunks(text) {
+    text = text.trim().replace(/\s+/g, ' ');
+    const result = [];
+
+    // Step 1: split by sentence endings
+    const sentences = [];
+    let buf = '';
+    for (let i = 0; i < text.length; i++) {
+      buf += text[i];
+      if (['.', '!', '?'].includes(text[i])) {
+        const rest = text.slice(i + 1).trimStart();
+        if (rest.length === 0 || /^[A-Z"'(]/.test(rest)) {
+          sentences.push(buf.trim());
+          buf = '';
+          while (i + 1 < text.length && text[i + 1] === ' ') i++;
+        }
+      }
+    }
+    if (buf.trim()) sentences.push(buf.trim());
+
+    // Step 2: split long sentences by comma/semicolon
+    for (const sentence of sentences) {
+      if (!sentence) continue;
+      const wordCount = sentence.split(/\s+/).filter(Boolean).length;
+
+      if (wordCount <= 10) {
+        result.push(sentence);
+      } else {
+        const parts = sentence.split(/(?<=[,;:])\s+/);
+        let buffer = '';
+        for (const part of parts) {
+          if (!buffer) {
+            buffer = part;
+          } else {
+            const combined = buffer + ' ' + part;
+            if (combined.split(/\s+/).length <= 12) {
+              buffer = combined;
+            } else {
+              if (buffer.trim()) result.push(buffer.trim());
+              buffer = part;
+            }
+          }
+        }
+        if (buffer.trim()) result.push(buffer.trim());
+      }
+    }
+
+    return result.filter(c => c.trim().length > 2);
+  }
+
+  // ===== Translation =====
+  async function translate(text) {
+    if (translationCache[text]) return translationCache[text];
+    try {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ja`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      const data = await res.json();
+      const t = data.responseData?.translatedText;
+      if (!t || t === text) throw new Error('no translation');
+      translationCache[text] = t;
+      return t;
+    } catch {
+      return '（翻訳を取得できませんでした）';
+    }
+  }
+
+  // ===== TTS =====
+  function loadVoices() {
+    voices = speechSynthesis.getVoices();
+  }
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+
+  function getBestEnglishVoice() {
+    if (!voices.length) voices = speechSynthesis.getVoices();
+    return voices.find(v => v.lang === 'en-US' && /female|samantha|zira/i.test(v.name))
+        || voices.find(v => v.lang === 'en-US')
+        || voices.find(v => v.lang.startsWith('en-'))
+        || voices.find(v => v.lang.startsWith('en'))
+        || null;
+  }
+
+  function playTTS(text, rate) {
+    speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'en-US';
+    utt.rate = rate;
+    utt.pitch = 1;
+    const voice = getBestEnglishVoice();
+    if (voice) utt.voice = voice;
+    speechSynthesis.speak(utt);
+  }
+
+  function playNormal() { playTTS(chunks[currentIndex], 1.0); }
+  function playSlow()   { playTTS(chunks[currentIndex], 0.65); }
+
+  // ===== STT =====
+  function toggleRecord() {
+    if (isRecording) { stopRecording(); } else { startRecording(); }
+  }
+
+  function startRecording() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      alert('音声認識はChrome / Edge でご利用ください。\nSettings → Enable speech recognition');
+      return;
+    }
+
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+      const isFinal = e.results[e.results.length - 1].isFinal;
+
+      document.getElementById('result-text').textContent = '"' + transcript + '"';
+      document.getElementById('result-area').classList.add('visible');
+
+      if (isFinal) {
+        const score = calcScore(chunks[currentIndex], transcript);
+        showScore(score);
+        practiceScores[currentIndex] = score;
+        updateProgress();
+        setRecordUI(false);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      setRecordUI(false);
+      if (e.error === 'no-speech') {
+        document.getElementById('result-text').textContent = '音声が検出されませんでした。もう一度お試しください。';
+        document.getElementById('result-area').classList.add('visible');
+      } else if (e.error === 'not-allowed') {
+        alert('マイクへのアクセスが拒否されています。ブラウザのマイク許可を確認してください。');
+      }
+    };
+
+    recognition.onend = () => { setRecordUI(false); };
+    recognition.start();
+    setRecordUI(true);
+  }
+
+  function stopRecording() {
+    if (recognition) recognition.stop();
+    setRecordUI(false);
+  }
+
+  function setRecordUI(recording) {
+    isRecording = recording;
+    const btn = document.getElementById('record-btn');
+    btn.classList.toggle('recording', recording);
+    document.getElementById('record-label').textContent = recording ? '停止' : '録音';
+  }
+
+  // ===== Score =====
+  function calcScore(original, recognized) {
+    const norm = s => s.toLowerCase().replace(/[.,!?;:'"()\-]/g, '').split(/\s+/).filter(Boolean);
+    const orig = norm(original);
+    const rec  = norm(recognized);
+    if (!orig.length) return 0;
+
+    let hits = 0;
+    const used = new Set();
+    for (const w of rec) {
+      const i = orig.findIndex((o, idx) => o === w && !used.has(idx));
+      if (i !== -1) { hits++; used.add(i); }
+    }
+    return Math.min(100, Math.round((hits / orig.length) * 100));
+  }
+
+  function showScore(score) {
+    let color, comment;
+    if (score >= 80) { color = '#10B981'; comment = '素晴らしい！ほぼ完璧です'; }
+    else if (score >= 60) { color = '#F59E0B'; comment = 'もう少し！くり返し練習しましょう'; }
+    else if (score >= 40) { color = '#EA580C'; comment = 'ゆっくり再生を聞いてからもう一度'; }
+    else                  { color = '#E11D48'; comment = '再生を聞いてから真似して話してみてください'; }
+
+    document.getElementById('score-bar').style.width  = score + '%';
+    document.getElementById('score-bar').style.background = color;
+    document.getElementById('score-number').textContent   = score + '%';
+    document.getElementById('score-number').style.color   = color;
+    document.getElementById('score-comment').textContent  = comment;
+    document.getElementById('score-comment').style.color  = color;
+  }
+
+  // ===== Start Practice =====
+  async function startPractice() {
+    const text = document.getElementById('input-text').value.trim();
+    if (!text) { alert('英語テキストを入力してください。'); return; }
+
+    chunks = splitIntoChunks(text);
+    if (!chunks.length) { alert('テキストを認識できませんでした。英語を入力してください。'); return; }
+
+    practiceScores  = {};
+    translationCache = {};
+    currentIndex = 0;
+
+    document.getElementById('loading-overlay').classList.add('visible');
+    document.getElementById('start-btn').disabled = true;
+
+    await Promise.all(chunks.map(c => translate(c)));
+
+    document.getElementById('loading-overlay').classList.remove('visible');
+    document.getElementById('start-btn').disabled = false;
+
+    updateListUI();
+    showScreen('list');
+  }
+
+  // ===== List UI =====
+  function updateListUI() {
+    const grid = document.getElementById('chunks-grid');
+    grid.innerHTML = '';
+
+    const done  = Object.keys(practiceScores).length;
+    const total = chunks.length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+
+    document.getElementById('list-progress-text').textContent = `練習済み: ${done} / ${total}`;
+    document.getElementById('list-progress-pct').textContent  = pct + '%';
+    document.getElementById('list-progress-fill').style.width = pct + '%';
+
+    chunks.forEach((chunk, i) => {
+      const score = practiceScores[i];
+      const isDone = score !== undefined;
+
+      let badgeHtml = '';
+      if (isDone) {
+        const cls  = score >= 80 ? 'badge-great' : score >= 50 ? 'badge-ok' : 'badge-low';
+        badgeHtml = `<div class="chunk-score-badge ${cls}">${score}%</div>`;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'chunk-card' + (isDone ? ' done' : '');
+      card.onclick = () => goToPractice(i);
+      card.innerHTML = `
+        <div class="chunk-num">${isDone ? '✓' : i + 1}</div>
+        <div class="chunk-preview">
+          <div class="chunk-preview-en">${escHtml(chunk.slice(0, 72))}${chunk.length > 72 ? '…' : ''}</div>
+          <div class="chunk-preview-ja">${escHtml((translationCache[chunk] || '').slice(0, 60))}${(translationCache[chunk] || '').length > 60 ? '…' : ''}</div>
+        </div>
+        ${badgeHtml}
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ===== Practice =====
+  function goToPractice(i) {
+    currentIndex = i;
+    renderPractice();
+    showScreen('practice');
+  }
+
+  async function renderPractice() {
+    speechSynthesis.cancel();
+    if (isRecording) stopRecording();
+
+    const chunk = chunks[currentIndex];
+    const total = chunks.length;
+
+    document.getElementById('chunk-counter').textContent = `チャンク ${currentIndex + 1} / ${total}`;
+    document.getElementById('practice-english').textContent = chunk;
+    document.getElementById('word-count').textContent = chunk.split(/\s+/).filter(Boolean).length + ' 語';
+
+    // Translation
+    const jaEl = document.getElementById('practice-japanese');
+    jaEl.innerHTML = '<span class="loading-text">翻訳中...</span>';
+    jaEl.textContent = await translate(chunk);
+
+    // Reset result
+    document.getElementById('result-area').classList.remove('visible');
+    document.getElementById('result-text').textContent = '';
+    document.getElementById('score-bar').style.width = '0%';
+    document.getElementById('score-number').textContent = '—';
+    document.getElementById('score-comment').textContent = '';
+
+    // Show previous score
+    const prev = practiceScores[currentIndex];
+    if (prev !== undefined) {
+      document.getElementById('result-text').textContent = '（前回の結果）';
+      document.getElementById('result-area').classList.add('visible');
+      showScore(prev);
+    }
+
+    updateProgress();
+
+    document.getElementById('prev-btn').disabled = (currentIndex === 0);
+    document.getElementById('next-btn').disabled = (currentIndex === total - 1);
+
+    // Completion
+    const allDone = Object.keys(practiceScores).length === total;
+    document.getElementById('completion-banner').classList.toggle('visible', allDone);
+  }
+
+  function navigate(dir) {
+    const next = currentIndex + dir;
+    if (next >= 0 && next < chunks.length) {
+      currentIndex = next;
+      renderPractice();
+    }
+  }
+
+  function updateProgress() {
+    const done  = Object.keys(practiceScores).length;
+    const total = chunks.length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('practice-progress-fill').style.width = pct + '%';
+    document.getElementById('practice-progress-pct').textContent  = pct + '%';
+  }
+
+  // ===== Full Practice =====
+  let fullBestScore = null;
+  let fullTranscript = '';
+  let isFullRecording = false;
+  let fullRecognition = null;
+
+  function goToFullPractice() {
+    if (isRecording) stopRecording();
+    speechSynthesis.cancel();
+
+    document.getElementById('full-text-display').textContent = chunks.join(' ');
+    document.getElementById('full-result-area').classList.remove('visible');
+    document.getElementById('full-interim-box').classList.remove('visible');
+    document.getElementById('full-interim').textContent = '';
+    setFullRecordUI(false);
+
+    const tag = document.getElementById('full-best-tag');
+    if (fullBestScore !== null) {
+      tag.textContent = '自己ベスト: ' + fullBestScore + '%';
+      tag.style.display = 'inline';
+    } else {
+      tag.style.display = 'none';
+    }
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-full').classList.add('active');
+  }
+
+  function playFullNormal() { playTTS(chunks.join(' '), 1.0); }
+  function playFullSlow()   { playTTS(chunks.join(' '), 0.65); }
+
+  function toggleFullRecord() {
+    if (isFullRecording) { stopFullRecording(); } else { startFullRecording(); }
+  }
+
+  function startFullRecording() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('音声認識はChrome / Edge でご利用ください。'); return; }
+
+    fullTranscript = '';
+    document.getElementById('full-interim').textContent = '';
+    document.getElementById('full-interim-box').classList.add('visible');
+    document.getElementById('full-result-area').classList.remove('visible');
+    document.getElementById('full-text-display').textContent = chunks.join(' ');
+
+    fullRecognition = new SR();
+    fullRecognition.lang = 'en-US';
+    fullRecognition.continuous = true;
+    fullRecognition.interimResults = true;
+
+    fullRecognition.onresult = (e) => {
+      let t = '';
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' ';
+      fullTranscript = t.trim();
+      document.getElementById('full-interim').textContent = fullTranscript;
+    };
+
+    fullRecognition.onerror = (e) => {
+      if (e.error === 'not-allowed') { alert('マイクへのアクセスが拒否されています。'); setFullRecordUI(false); }
+    };
+
+    fullRecognition.onend = () => {
+      if (isFullRecording) {
+        // Chrome が途中で止まった場合は自動再起動
+        try { fullRecognition.start(); } catch {}
+        return;
+      }
+      document.getElementById('full-interim-box').classList.remove('visible');
+      if (fullTranscript) finalizeFullScore(fullTranscript);
+    };
+
+    fullRecognition.start();
+    setFullRecordUI(true);
+  }
+
+  function stopFullRecording() {
+    isFullRecording = false;
+    if (fullRecognition) fullRecognition.stop();
+    document.getElementById('full-record-btn').classList.remove('recording');
+    document.getElementById('full-record-label').textContent = '全文を録音する';
+  }
+
+  function setFullRecordUI(rec) {
+    isFullRecording = rec;
+    document.getElementById('full-record-btn').classList.toggle('recording', rec);
+    document.getElementById('full-record-label').textContent = rec ? '停止する（採点します）' : '全文を録音する';
+  }
+
+  function finalizeFullScore(transcript) {
+    const fullText = chunks.join(' ');
+    const score = calcScore(fullText, transcript);
+
+    if (fullBestScore === null || score > fullBestScore) {
+      fullBestScore = score;
+      const tag = document.getElementById('full-best-tag');
+      tag.textContent = '自己ベスト: ' + fullBestScore + '%';
+      tag.style.display = 'inline';
+    }
+
+    document.getElementById('full-highlighted').innerHTML = buildHighlightedText(fullText, transcript);
+    document.getElementById('full-result-area').classList.add('visible');
+
+    let color, comment;
+    if (score >= 80)      { color = '#10B981'; comment = '素晴らしい！全文ほぼ完璧です'; }
+    else if (score >= 60) { color = '#F59E0B'; comment = 'もう少し！くり返し練習しましょう'; }
+    else if (score >= 40) { color = '#EA580C'; comment = 'まずゆっくり再生を聞いてからもう一度'; }
+    else                  { color = '#E11D48'; comment = '再生をよく聞いて、チャンクごとに練習しましょう'; }
+
+    document.getElementById('full-score-bar').style.width = score + '%';
+    document.getElementById('full-score-bar').style.background = color;
+    document.getElementById('full-score-number').textContent = score + '%';
+    document.getElementById('full-score-number').style.color = color;
+    document.getElementById('full-score-comment').textContent = comment;
+    document.getElementById('full-score-comment').style.color = color;
+  }
+
+  function buildHighlightedText(original, recognized) {
+    const normWord = w => w.toLowerCase().replace(/[.,!?;:'"()\-]/g, '');
+    const tokens = original.split(/(\s+)/);
+    const recNorm = recognized.toLowerCase().replace(/[.,!?;:'"()\-]/g, '').split(/\s+/).filter(Boolean);
+    const used = new Set();
+
+    return tokens.map(tok => {
+      if (/^\s+$/.test(tok)) return tok;
+      const norm = normWord(tok);
+      if (!norm) return escHtml(tok);
+      const idx = recNorm.findIndex((w, i) => w === norm && !used.has(i));
+      if (idx !== -1) { used.add(idx); return `<span class="word-hit">${escHtml(tok)}</span>`; }
+      return `<span class="word-miss">${escHtml(tok)}</span>`;
+    }).join('');
+  }
+
+  // ===== Utils =====
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
