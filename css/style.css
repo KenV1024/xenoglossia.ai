@@ -510,9 +510,62 @@ textarea::placeholder { color: #94A3B8; }
   text-align: center; padding: 14px 0; min-height: 54px;
   line-height: 1.4;
 }
-.bc-sub-actions {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px; margin-top: 4px;
+/* 録音インジケーター（メイン練習画面） */
+.rec-indicator {
+  display: none;
+  background: #DC2626;
+  color: white;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 15px; font-weight: 700;
+  text-align: center;
+  margin-bottom: 12px;
+  align-items: center; justify-content: center; gap: 10px;
+}
+.rec-indicator.visible { display: flex; }
+.rec-dot {
+  display: inline-block;
+  width: 13px; height: 13px;
+  background: white;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: rec-blink 0.7s infinite;
+}
+@keyframes rec-blink { 0%,100%{opacity:1;transform:scale(1.1)} 50%{opacity:0.3;transform:scale(0.7)} }
+
+/* BC パネル内録音インジケーター */
+.bc-rec-indicator {
+  background: #DC2626;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 700;
+  text-align: center;
+  margin: 8px 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* バックチェイニング フォーカスモード（関係ないUI非表示） */
+#screen-practice.bc-focus .progress-label,
+#screen-practice.bc-focus .progress-wrap,
+#screen-practice.bc-focus .completion-banner,
+#screen-practice.bc-focus .step-tag,
+#screen-practice.bc-focus .guide-toggle-row,
+#screen-practice.bc-focus .chunk-display,
+#screen-practice.bc-focus .action-buttons,
+#screen-practice.bc-focus .rec-indicator,
+#screen-practice.bc-focus .btn-cycle,
+#screen-practice.bc-focus .btn-backchain,
+#screen-practice.bc-focus .result-area,
+#screen-practice.bc-focus .nav-buttons { display: none !important; }
+
+.bc-main-actions {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-top: 10px;
+}
+.bc-nav-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-top: 8px;
 }
 .bc-action-btn {
   padding: 9px 4px; border-radius: 8px;
@@ -521,11 +574,19 @@ textarea::placeholder { color: #94A3B8; }
   cursor: pointer; transition: all 0.15s; font-family: inherit;
 }
 .bc-action-btn:hover { background: #F1F5F9; }
-.bc-record-btn.recording { background: #FEF2F2; border-color: #F87171; color: #B91C1C; animation: pulse 1s infinite; }
+.bc-record-btn.recording { background: #FEE2E2; border-color: #F87171; color: #B91C1C; }
+.bc-nav-btn {
+  padding: 9px 4px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid #E2E8F0; background: #F8FAFC;
+  cursor: pointer; transition: all 0.15s; font-family: inherit; color: #475569;
+}
+.bc-nav-btn:hover:not(:disabled) { background: #E2E8F0; }
+.bc-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .bc-next-btn { background: #EEF2FF; border-color: #A5B4FC; color: #4F46E5; }
 .bc-next-btn:hover { background: #4F46E5; color: white; border-color: #4F46E5; }
 .bc-result-text {
-  margin-top: 10px; font-size: 14px; color: #475569;
+  margin-top: 8px; font-size: 14px; color: #475569;
   text-align: center; padding: 6px; line-height: 1.6;
 }
 .bc-score-row {

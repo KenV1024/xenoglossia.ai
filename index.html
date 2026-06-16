@@ -212,6 +212,10 @@
       </button>
     </div>
 
+    <div class="rec-indicator" id="rec-indicator">
+      <span class="rec-dot"></span> 録音中...　マイクに向かってはっきり話してください
+    </div>
+
     <button class="btn-cycle" id="cycle-btn" onclick="playCycle()">
       <span id="cycle-icon">🔄</span> <span id="cycle-label">3ステップ練習（聞く → ゆっくり → 録音）</span>
     </button>
@@ -223,18 +227,24 @@
     <div class="bc-panel" id="bc-panel" style="display:none;">
       <div class="bc-header-row">
         <span class="bc-step-tag" id="bc-step-tag">ステップ 1/5</span>
-        <button class="bc-close" onclick="stopBackchain()">✕ 終了</button>
+        <button class="bc-close" onclick="stopBackchain()">✕ 練習を終える</button>
       </div>
       <div class="bc-phrase" id="bc-phrase"></div>
-      <div class="bc-sub-actions">
-        <button class="bc-action-btn" onclick="bcPlay()">▶ 聞く</button>
-        <button class="bc-action-btn bc-record-btn" id="bc-record-btn" onclick="bcRecord()">🎤 話す</button>
-        <button class="bc-action-btn bc-next-btn" id="bc-next-btn" onclick="bcNext()">次へ →</button>
+      <div class="bc-rec-indicator" id="bc-rec-indicator" style="display:none;">
+        <span class="rec-dot"></span> 録音中...　話してください
       </div>
       <div class="bc-result-text" id="bc-result-text" style="display:none;"></div>
       <div class="bc-score-row" id="bc-score-row" style="display:none;">
         <div class="score-bar-wrap"><div class="score-bar-fill" id="bc-score-bar" style="width:0%"></div></div>
         <div class="score-number" id="bc-score-number">—</div>
+      </div>
+      <div class="bc-main-actions">
+        <button class="bc-action-btn" onclick="bcPlay()">▶ 聞く</button>
+        <button class="bc-action-btn bc-record-btn" id="bc-record-btn" onclick="bcRecord()">🎤 録音</button>
+      </div>
+      <div class="bc-nav-row">
+        <button class="bc-nav-btn" id="bc-prev-btn" onclick="bcPrev()" disabled>← 前へ</button>
+        <button class="bc-nav-btn bc-next-btn" id="bc-next-btn" onclick="bcNext()">次へ →</button>
       </div>
     </div>
 

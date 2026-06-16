@@ -88,6 +88,10 @@ function stopAllAudio() {
   if (bcPanel) bcPanel.style.display = 'none';
   const bcBtn = $('bc-btn');
   if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('バックチェイニング練習（末尾から積み上げ）', 'Back-chaining Drill'); $('bc-icon').textContent = '⬅'; }
+  const sp = $('screen-practice');
+  if (sp) sp.classList.remove('bc-focus');
+  const ri = $('rec-indicator');
+  if (ri) ri.classList.remove('visible');
 }
 
 // ===== UI language helpers =====
@@ -802,10 +806,8 @@ function startBackchain() {
   stopAllAudio();
   _bcActive = true;
   _bcIdx = 0;
+  $('screen-practice').classList.add('bc-focus');
   $('bc-panel').style.display = 'block';
-  $('bc-btn').classList.add('active');
-  $('bc-btn-label').textContent = u('終了', 'End');
-  $('bc-icon').textContent = '⬛';
   bcRenderStep();
   bcPlay();
 }
@@ -814,6 +816,7 @@ function stopBackchain() {
   _bcActive = false;
   if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
   Speech.stop();
+  $('screen-practice').classList.remove('bc-focus');
   const bcPanel = $('bc-panel');
   if (bcPanel) bcPanel.style.display = 'none';
   const bcBtn = $('bc-btn');
@@ -828,16 +831,20 @@ function bcRenderStep() {
   $('bc-result-text').style.display = 'none';
   $('bc-result-text').innerHTML = '';
   $('bc-score-row').style.display = 'none';
+  $('bc-rec-indicator').style.display = 'none';
   const rec = $('bc-record-btn');
   rec.classList.remove('recording');
-  rec.textContent = u('🎤 話す', '🎤 Speak');
+  rec.textContent = u('🎤 録音', '🎤 Record');
+  $('bc-prev-btn').disabled = _bcIdx === 0;
   $('bc-next-btn').textContent = _bcIdx === total - 1 ? u('完了 ✓', 'Finish ✓') : u('次へ →', 'Next →');
 }
 
 function bcPlay() {
   if (!_bcActive) return;
   Speech.stop();
-  Speech.speak(_bcSteps[_bcIdx], App.lang, 1.0, null);
+  Speech.speak(_bcSteps[_bcIdx], App.lang, 1.0, () => {
+    if (_bcActive && !_bcRecognizer) setTimeout(() => { if (_bcActive) bcRecord(); }, 500);
+  });
 }
 
 function bcRecord() {
@@ -846,13 +853,15 @@ function bcRecord() {
   if (_bcRecognizer) {
     _bcRecognizer.abort(); _bcRecognizer = null;
     $('bc-record-btn').classList.remove('recording');
-    $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
+    $('bc-record-btn').textContent = u('🎤 録音', '🎤 Record');
+    $('bc-rec-indicator').style.display = 'none';
     return;
   }
   Speech.stop();
   const phrase = _bcSteps[_bcIdx];
   $('bc-record-btn').classList.add('recording');
   $('bc-record-btn').textContent = u('⏸ 停止', '⏸ Stop');
+  $('bc-rec-indicator').style.display = 'flex';
   _bcRecognizer = Speech.createRecognizer({
     lang: App.lang,
     continuous: false,
@@ -862,8 +871,9 @@ function bcRecord() {
     },
     onFinal: (transcript) => {
       _bcRecognizer = null;
+      $('bc-rec-indicator').style.display = 'none';
       $('bc-record-btn').classList.remove('recording');
-      $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
+      $('bc-record-btn').textContent = u('🎤 録音', '🎤 Record');
       const score = Score.calc(phrase, transcript, App.lang);
       const fb = Score.feedback(score, App.lang);
       $('bc-result-text').innerHTML = Score.highlight(phrase, transcript, App.lang);
@@ -876,14 +886,15 @@ function bcRecord() {
     },
     onError: (err) => {
       _bcRecognizer = null;
+      $('bc-rec-indicator').style.display = 'none';
       $('bc-record-btn').classList.remove('recording');
-      $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
+      $('bc-record-btn').textContent = u('🎤 録音', '🎤 Record');
       if (err === 'no-speech') {
         $('bc-result-text').textContent = u('音声が検出されませんでした', 'No speech detected');
         $('bc-result-text').style.display = 'block';
       }
     },
-    onEnd: () => { if (_bcRecognizer) { _bcRecognizer = null; $('bc-record-btn').classList.remove('recording'); } }
+    onEnd: () => { if (_bcRecognizer) { _bcRecognizer = null; $('bc-rec-indicator').style.display = 'none'; $('bc-record-btn').classList.remove('recording'); } }
   });
   _bcRecognizer.start();
 }
@@ -894,6 +905,15 @@ function bcNext() {
   Speech.stop();
   if (_bcIdx >= _bcSteps.length - 1) { stopBackchain(); return; }
   _bcIdx++;
+  bcRenderStep();
+  bcPlay();
+}
+
+function bcPrev() {
+  if (!_bcActive || _bcIdx <= 0) return;
+  if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
+  Speech.stop();
+  _bcIdx--;
   bcRenderStep();
   bcPlay();
 }
@@ -962,6 +982,7 @@ function startChunkRecording() {
 function setRecordUI(recording) {
   $('record-btn').classList.toggle('recording', recording);
   $('record-label').textContent = recording ? u('停止', 'Stop') : u('録音', 'Record');
+  $('rec-indicator').classList.toggle('visible', recording);
 }
 
 function showChunkScore(score) {
