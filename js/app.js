@@ -82,6 +82,12 @@ function stopAllAudio() {
   _cycleActive = false;
   const cb = $('cycle-btn');
   if (cb) { cb.classList.remove('cycling'); $('cycle-label').textContent = u('3-Step Drill (listen → slow → speak)', '3ステップ練習（聞く → ゆっくり → 録音）'); $('cycle-icon').textContent = '🔄'; }
+  _bcActive = false;
+  if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
+  const bcPanel = $('bc-panel');
+  if (bcPanel) bcPanel.style.display = 'none';
+  const bcBtn = $('bc-btn');
+  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('Back-chaining Drill', 'バックチェイニング練習（末尾から積み上げ）'); $('bc-icon').textContent = '⬅'; }
 }
 
 // ===== UI language helpers =====
@@ -720,6 +726,12 @@ function playMyVoice() { VoiceRecorder.play(); }
 // ===== 3ステップ練習サイクル（Pimsleur: 通常→ゆっくり→録音）=====
 let _cycleActive = false;
 
+// ===== バックチェイニング練習（Pimsleur: 末尾から積み上げ）=====
+let _bcActive = false;
+let _bcSteps = [];
+let _bcIdx = 0;
+let _bcRecognizer = null;
+
 function playCycle() {
   if (_cycleActive) { stopAllAudio(); return; }
   if (!Speech.supported()) { alert('音声認識はChrome / Edgeでご利用ください。'); return; }
@@ -757,6 +769,133 @@ function playCycle() {
     }
   };
   runStep(1);
+}
+
+function _bcBuildSteps(text, lang) {
+  let tokens;
+  if (lang === 'en') {
+    tokens = text.split(/\s+/).filter(Boolean);
+  } else {
+    const chars = [...text];
+    if (chars.length <= 4) return [text];
+    const mid = Math.ceil(chars.length / 2);
+    tokens = [chars.slice(0, mid).join(''), chars.slice(mid).join('')];
+  }
+  if (tokens.length <= 1) return tokens;
+  const sep = lang === 'ja' ? '' : ' ';
+  const steps = [];
+  for (let i = 1; i <= tokens.length; i++) {
+    steps.push(tokens.slice(tokens.length - i).join(sep));
+  }
+  return steps;
+}
+
+function startBackchain() {
+  if (_bcActive) { stopBackchain(); return; }
+  const step = currentStep();
+  const text = App.paragraphs[step.p].chunks[step.c];
+  _bcSteps = _bcBuildSteps(text, App.lang);
+  if (_bcSteps.length <= 1) {
+    alert(u('このチャンクは短すぎてバックチェイニングできません', 'Chunk too short for back-chaining'));
+    return;
+  }
+  stopAllAudio();
+  _bcActive = true;
+  _bcIdx = 0;
+  $('bc-panel').style.display = 'block';
+  $('bc-btn').classList.add('active');
+  $('bc-btn-label').textContent = u('End', '終了');
+  $('bc-icon').textContent = '⬛';
+  bcRenderStep();
+  bcPlay();
+}
+
+function stopBackchain() {
+  _bcActive = false;
+  if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
+  Speech.stop();
+  const bcPanel = $('bc-panel');
+  if (bcPanel) bcPanel.style.display = 'none';
+  const bcBtn = $('bc-btn');
+  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('Back-chaining Drill', 'バックチェイニング練習（末尾から積み上げ）'); $('bc-icon').textContent = '⬅'; }
+}
+
+function bcRenderStep() {
+  const phrase = _bcSteps[_bcIdx];
+  const total = _bcSteps.length;
+  $('bc-step-tag').textContent = u(`Step ${_bcIdx + 1}/${total}`, `ステップ ${_bcIdx + 1}/${total}`);
+  $('bc-phrase').textContent = phrase;
+  $('bc-result-text').style.display = 'none';
+  $('bc-result-text').innerHTML = '';
+  $('bc-score-row').style.display = 'none';
+  const rec = $('bc-record-btn');
+  rec.classList.remove('recording');
+  rec.textContent = u('🎤 Speak', '🎤 話す');
+  $('bc-next-btn').textContent = _bcIdx === total - 1 ? u('Finish ✓', '完了 ✓') : u('Next →', '次へ →');
+}
+
+function bcPlay() {
+  if (!_bcActive) return;
+  Speech.stop();
+  Speech.speak(_bcSteps[_bcIdx], App.lang, 1.0, null);
+}
+
+function bcRecord() {
+  if (!Speech.supported()) { alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.')); return; }
+  if (!_bcActive) return;
+  if (_bcRecognizer) {
+    _bcRecognizer.abort(); _bcRecognizer = null;
+    $('bc-record-btn').classList.remove('recording');
+    $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+    return;
+  }
+  Speech.stop();
+  const phrase = _bcSteps[_bcIdx];
+  $('bc-record-btn').classList.add('recording');
+  $('bc-record-btn').textContent = u('⏸ Stop', '⏸ 停止');
+  _bcRecognizer = Speech.createRecognizer({
+    lang: App.lang,
+    continuous: false,
+    onInterim: (t) => {
+      $('bc-result-text').textContent = '"' + t + '"';
+      $('bc-result-text').style.display = 'block';
+    },
+    onFinal: (transcript) => {
+      _bcRecognizer = null;
+      $('bc-record-btn').classList.remove('recording');
+      $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+      const score = Score.calc(phrase, transcript, App.lang);
+      const fb = Score.feedback(score, App.lang);
+      $('bc-result-text').innerHTML = Score.highlight(phrase, transcript, App.lang);
+      $('bc-result-text').style.display = 'block';
+      $('bc-score-row').style.display = 'flex';
+      $('bc-score-bar').style.width = score + '%';
+      $('bc-score-bar').style.background = fb.color;
+      $('bc-score-number').textContent = score + '%';
+      $('bc-score-number').style.color = fb.color;
+    },
+    onError: (err) => {
+      _bcRecognizer = null;
+      $('bc-record-btn').classList.remove('recording');
+      $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+      if (err === 'no-speech') {
+        $('bc-result-text').textContent = u('音声が検出されませんでした', 'No speech detected');
+        $('bc-result-text').style.display = 'block';
+      }
+    },
+    onEnd: () => { if (_bcRecognizer) { _bcRecognizer = null; $('bc-record-btn').classList.remove('recording'); } }
+  });
+  _bcRecognizer.start();
+}
+
+function bcNext() {
+  if (!_bcActive) return;
+  if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
+  Speech.stop();
+  if (_bcIdx >= _bcSteps.length - 1) { stopBackchain(); return; }
+  _bcIdx++;
+  bcRenderStep();
+  bcPlay();
 }
 
 function toggleRecord() {

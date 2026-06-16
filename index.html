@@ -216,6 +216,28 @@
       <span id="cycle-icon">🔄</span> <span id="cycle-label">3ステップ練習（聞く → ゆっくり → 録音）</span>
     </button>
 
+    <button class="btn-backchain" id="bc-btn" onclick="startBackchain()">
+      <span id="bc-icon">⬅</span> <span id="bc-btn-label">バックチェイニング練習（末尾から積み上げ）</span>
+    </button>
+
+    <div class="bc-panel" id="bc-panel" style="display:none;">
+      <div class="bc-header-row">
+        <span class="bc-step-tag" id="bc-step-tag">ステップ 1/5</span>
+        <button class="bc-close" onclick="stopBackchain()">✕ 終了</button>
+      </div>
+      <div class="bc-phrase" id="bc-phrase"></div>
+      <div class="bc-sub-actions">
+        <button class="bc-action-btn" onclick="bcPlay()">▶ 聞く</button>
+        <button class="bc-action-btn bc-record-btn" id="bc-record-btn" onclick="bcRecord()">🎤 話す</button>
+        <button class="bc-action-btn bc-next-btn" id="bc-next-btn" onclick="bcNext()">次へ →</button>
+      </div>
+      <div class="bc-result-text" id="bc-result-text" style="display:none;"></div>
+      <div class="bc-score-row" id="bc-score-row" style="display:none;">
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="bc-score-bar" style="width:0%"></div></div>
+        <div class="score-number" id="bc-score-number">—</div>
+      </div>
+    </div>
+
     <div class="result-area" id="result-area">
       <div class="result-label" id="result-label-text">あなたの発音（認識結果）</div>
       <div class="legend-row" id="chunk-result-legend" style="display:none;">
