@@ -274,6 +274,26 @@ textarea::placeholder { color: #94A3B8; }
 }
 .btn-review-mode:hover { background: #FFF7ED; }
 
+/* ===== 翌日復習バナー ===== */
+.review-day-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border: 1px solid #F59E0B; border-radius: 10px;
+  padding: 12px 16px; margin-bottom: 14px;
+}
+.review-day-icon { font-size: 22px; flex-shrink: 0; }
+.review-day-text { flex: 1; }
+#review-day-title { font-size: 13px; font-weight: 700; color: #78350F; }
+#review-day-sub { font-size: 11px; color: #92400E; margin-top: 2px; }
+
+.para-block.needs-review { border-left: 3px solid #F59E0B; padding-left: 4px; }
+.review-badge {
+  background: #FEF3C7; color: #92400E;
+  border: 1px solid #F59E0B; border-radius: 4px;
+  font-size: 11px; font-weight: 700; padding: 2px 6px;
+  margin-right: 4px;
+}
+
 /* ===== Practice Screen ===== */
 .practice-top {
   display: flex; justify-content: space-between; align-items: center;

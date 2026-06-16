@@ -152,6 +152,14 @@
     <button class="btn-full-mode" id="start-flow-btn" onclick="startFlowFromBeginning()">最初から順番に練習する →</button>
     <button class="btn-review-mode" id="review-btn" style="display:none;" onclick="startReviewMode()">🔁 苦手チャンクだけ復習する</button>
 
+    <div class="review-day-banner" id="review-day-banner" style="display:none;">
+      <span class="review-day-icon">📅</span>
+      <div class="review-day-text">
+        <div id="review-day-title">前回の復習パラグラフがあります</div>
+        <div id="review-day-sub">スコア70%未満のパラグラフをリスト上部に表示しています</div>
+      </div>
+    </div>
+
     <div id="para-list"></div>
 
     <button class="btn-full-mode" id="full-mode-btn" style="margin-top:8px;" onclick="goToStep({type:'full'})">全文を通して練習する →</button>

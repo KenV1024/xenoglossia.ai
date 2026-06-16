@@ -15,7 +15,8 @@ const App = {
   fileName: null,
   scene: null,              // {title, scene, turns:[{speaker,text,translation}], lang, level, topic}
   sceneOpts: { lang: 'en', level: 'intermediate', topic: '' },
-  tag: ''
+  tag: '',
+  sessionCreatedTs: null    // セッション開始日時（復習判定に使用）
 };
 
 let chunkRecognizer = null;
@@ -201,6 +202,7 @@ function saveSession() {
     scores: App.scores,
     scene: App.scene,
     tag: App.tag || '',
+    created_ts: App.sessionCreatedTs || Date.now(),
     ts: Date.now()
   });
 }
@@ -230,6 +232,7 @@ function resumeSession() {
   App.scores = s.scores || {};
   App.scene = s.scene || null;
   App.tag = s.tag || '';
+  App.sessionCreatedTs = s.created_ts || s.ts || null;
   if (App.scene && App.scene.lang) App.sceneOpts.lang = App.scene.lang;
   App.reviewMode = false;
   _updateTagChips();
@@ -356,6 +359,7 @@ function startTextPractice() {
 
   App.scores = {};
   App.reviewMode = false;
+  App.sessionCreatedTs = Date.now();
   buildFlow();
   saveSession();
   showScreen('list');
@@ -443,6 +447,24 @@ function startReviewMode() {
   renderCurrentStep();
 }
 
+// ===== 翌日復習判定 =====
+function _isReviewDay() {
+  if (!App.sessionCreatedTs) return false;
+  const createdDate = new Date(App.sessionCreatedTs).toDateString();
+  const today = new Date().toDateString();
+  return createdDate !== today && Object.values(App.scores).some(s => s !== undefined);
+}
+
+function _getReviewParaIndices() {
+  return App.paragraphs.reduce((acc, para, p) => {
+    const chunkScores = para.chunks.map((_, c) => App.scores[`c:${p}:${c}`]).filter(s => s !== undefined);
+    const paraScore = App.scores[`p:${p}`];
+    const allScores = [...chunkScores, ...(paraScore !== undefined ? [paraScore] : [])];
+    if (allScores.length && Math.min(...allScores) < 70) acc.push(p);
+    return acc;
+  }, []);
+}
+
 // ===== List UI =====
 function updateListUI() {
   $('list-title').textContent = App.source === 'scene' && App.scene
@@ -457,12 +479,32 @@ function updateListUI() {
 
   $('review-btn').style.display = weakSteps().length ? 'block' : 'none';
 
+  // 翌日復習バナー・パラグラフ優先ソート
+  const isReviewDay = _isReviewDay();
+  const reviewParaSet = isReviewDay ? new Set(_getReviewParaIndices()) : new Set();
+  const banner = $('review-day-banner');
+  if (isReviewDay && reviewParaSet.size > 0) {
+    $('review-day-title').textContent = `📅 前回の復習パラグラフ: ${reviewParaSet.size}件`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // 復習対象を先頭に、それ以外を後ろに並べる
+  const paraOrder = [...Array(App.paragraphs.length).keys()].sort((a, b) => {
+    const aRev = reviewParaSet.has(a) ? 0 : 1;
+    const bRev = reviewParaSet.has(b) ? 0 : 1;
+    return aRev - bRev;
+  });
+
   const wrap = $('para-list');
   wrap.innerHTML = '';
 
-  App.paragraphs.forEach((para, p) => {
+  paraOrder.forEach(p => {
+    const para = App.paragraphs[p];
+    const needsReview = reviewParaSet.has(p);
     const block = document.createElement('div');
-    block.className = 'para-block' + (App.paragraphs.length <= 3 ? ' open' : '');
+    block.className = 'para-block' + (App.paragraphs.length <= 3 ? ' open' : '') + (needsReview ? ' needs-review' : '');
 
     const paraScore = App.scores[`p:${p}`];
     const chunkScores = para.chunks.map((_, c) => App.scores[`c:${p}:${c}`]);
@@ -478,13 +520,14 @@ function updateListUI() {
       ? `${App.scene.turns[p] ? App.scene.turns[p].speaker + ': ' : ''}${escHtml(paraText(p).slice(0, 30))}…`
       : `パラグラフ ${p + 1}`;
 
+    const reviewBadge = needsReview ? '<span class="review-badge">要復習</span>' : '';
     const head = document.createElement('div');
     head.className = 'para-head';
     head.innerHTML = `
       <span class="para-toggle">▶</span>
       <span class="para-title">${label}</span>
       <span class="para-meta">${doneCount}/${para.chunks.length}</span>
-      ${badge}`;
+      ${reviewBadge}${badge}`;
     head.onclick = () => block.classList.toggle('open');
 
     const body = document.createElement('div');
@@ -1266,6 +1309,7 @@ function sceneToChunkPractice() {
   })).filter(p => p.chunks.length);
   App.scores = {};
   App.reviewMode = false;
+  App.sessionCreatedTs = Date.now();
   buildFlow();
   saveSession();
   showScreen('list');
