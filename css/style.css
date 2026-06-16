@@ -849,41 +849,7 @@ textarea::placeholder { color: #94A3B8; }
 .tag-chip:hover { border-color: #4F46E5; color: #4F46E5; }
 .tag-chip.active { background: #4F46E5; color: white; border-color: #4F46E5; }
 
-/* ===== シャドーイング ===== */
-.btn-shadow {
-  display: block; width: 100%;
-  padding: 11px 16px; margin-bottom: 12px;
-  background: linear-gradient(135deg, #FDF4FF 0%, #EEF2FF 100%);
-  border: 2px dashed #DDD6FE; border-radius: 10px;
-  font-size: 13px; font-weight: 600; color: #7C3AED;
-  cursor: pointer; font-family: inherit; transition: all 0.2s;
-}
-.btn-shadow:hover { background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%); color: white; border-style: solid; border-color: transparent; }
-.btn-shadow.shadowing { background: #FDF4FF; color: #7C3AED; border-color: #DDD6FE; border-style: solid; animation: pulse 1.4s infinite; }
-
-.shadow-indicator {
-  display: none;
-  background: #7C3AED; color: white;
-  padding: 14px 16px; border-radius: 10px;
-  font-size: 14px; font-weight: 700; text-align: center;
-  margin-bottom: 12px;
-  align-items: center; justify-content: center; gap: 10px;
-  transition: background 0.3s;
-}
-.shadow-indicator[data-phase="listening"] { background: #3B82F6; }
-.shadow-indicator[data-phase="counting"] {
-  background: #D97706;
-  flex-direction: column; gap: 0; padding: 18px 16px;
-}
-.shadow-indicator[data-phase="counting"] .rec-dot { display: none; }
-.shadow-indicator[data-phase="counting"] #shadow-status {
-  font-size: 3.5rem; font-weight: 900; line-height: 1;
-}
-.shadow-indicator[data-phase="recording"] { background: #7C3AED; }
-
-/* BCフォーカスモードでシャドーイングも非表示 */
-#screen-practice.bc-focus .btn-shadow,
-#screen-practice.bc-focus .shadow-indicator { display: none !important; }
+/* BCフォーカスモード */
 
 /* ===== 学習履歴画面 ===== */
 .history-stats {
