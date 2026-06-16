@@ -510,7 +510,40 @@ textarea::placeholder { color: #94A3B8; }
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
+  position: relative;
 }
+
+/* 100%達成お祝いオーバーレイ */
+.bc-celebrate {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 10;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.bc-celebrate.visible { opacity: 1; pointer-events: auto; }
+.bc-celebrate-emoji { font-size: 48px; line-height: 1; }
+.bc-celebrate-title { font-size: 22px; font-weight: 800; color: white; margin-top: 8px; }
+.bc-celebrate-sub { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+
+/* 自動進行セレクタ行 */
+.bc-advance-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.bc-advance-label { font-size: 12px; color: #64748B; }
+.bc-advance-sel {
+  font-size: 12px; padding: 2px 6px;
+  border: 1px solid #CBD5E1; border-radius: 6px;
+  background: white; color: #374151; cursor: pointer;
+  font-family: inherit;
+}
+
+/* 録音中・結果エリアを固定高さで確保しボタンが動かないようにする */
+.bc-dynamic { min-height: 94px; }
 .bc-header-row {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 10px;

@@ -246,18 +246,33 @@
     </button>
 
     <div class="bc-panel" id="bc-panel" style="display:none;">
+      <div class="bc-celebrate" id="bc-celebrate">
+        <div class="bc-celebrate-emoji">🎉</div>
+        <div class="bc-celebrate-title">100%達成！</div>
+        <div class="bc-celebrate-sub" id="bc-celebrate-sub">次のステップへ移動中...</div>
+      </div>
       <div class="bc-header-row">
         <span class="bc-step-tag" id="bc-step-tag">ステップ 1/5</span>
         <button class="bc-close" onclick="stopBackchain()">✕ 練習を終える</button>
       </div>
-      <div class="bc-phrase" id="bc-phrase"></div>
-      <div class="bc-rec-indicator" id="bc-rec-indicator" style="display:none;">
-        <span class="rec-dot"></span> 録音中...　話してください
+      <div class="bc-advance-row">
+        <span class="bc-advance-label">自動進行:</span>
+        <select class="bc-advance-sel" id="bc-advance-sel" onchange="setBcAdvance(this.value)">
+          <option value="perfect">100%のみ</option>
+          <option value="always">常に自動</option>
+          <option value="off">手動</option>
+        </select>
       </div>
-      <div class="bc-result-text" id="bc-result-text" style="display:none;"></div>
-      <div class="bc-score-row" id="bc-score-row" style="display:none;">
-        <div class="score-bar-wrap"><div class="score-bar-fill" id="bc-score-bar" style="width:0%"></div></div>
-        <div class="score-number" id="bc-score-number">—</div>
+      <div class="bc-phrase" id="bc-phrase"></div>
+      <div class="bc-dynamic">
+        <div class="bc-rec-indicator" id="bc-rec-indicator" style="display:none;">
+          <span class="rec-dot"></span> 録音中...　話してください
+        </div>
+        <div class="bc-result-text" id="bc-result-text" style="display:none;"></div>
+        <div class="bc-score-row" id="bc-score-row" style="display:none;">
+          <div class="score-bar-wrap"><div class="score-bar-fill" id="bc-score-bar" style="width:0%"></div></div>
+          <div class="score-number" id="bc-score-number">—</div>
+        </div>
       </div>
       <div class="bc-main-actions">
         <button class="bc-action-btn" onclick="bcPlay()">▶ 聞く</button>

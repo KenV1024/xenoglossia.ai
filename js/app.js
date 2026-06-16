@@ -794,6 +794,12 @@ let _bcActive = false;
 let _bcSteps = [];
 let _bcIdx = 0;
 let _bcRecognizer = null;
+let _bcAdvanceMode = localStorage.getItem('sc_bc_advance') || 'perfect';
+
+function setBcAdvance(mode) {
+  _bcAdvanceMode = mode;
+  localStorage.setItem('sc_bc_advance', mode);
+}
 
 function playCycle() {
   if (_cycleActive) { stopAllAudio(); return; }
@@ -867,6 +873,8 @@ function startBackchain() {
   _bcIdx = 0;
   $('screen-practice').classList.add('bc-focus');
   $('bc-panel').style.display = 'block';
+  const advSel = $('bc-advance-sel');
+  if (advSel) advSel.value = _bcAdvanceMode;
   bcRenderStep();
   bcPlay();
 }
@@ -891,6 +899,8 @@ function bcRenderStep() {
   $('bc-result-text').innerHTML = '';
   $('bc-score-row').style.display = 'none';
   $('bc-rec-indicator').style.display = 'none';
+  const cel = $('bc-celebrate');
+  if (cel) cel.classList.remove('visible');
   const rec = $('bc-record-btn');
   rec.classList.remove('recording');
   rec.textContent = u('🎤 録音', '🎤 Record');
@@ -942,6 +952,12 @@ function bcRecord() {
       $('bc-score-bar').style.background = fb.color;
       $('bc-score-number').textContent = score + '%';
       $('bc-score-number').style.color = fb.color;
+      // 自動進行
+      if (score === 100) {
+        bcCelebrate(_bcAdvanceMode !== 'off');
+      } else if (_bcAdvanceMode === 'always') {
+        setTimeout(() => { if (_bcActive) bcNext(); }, 900);
+      }
     },
     onError: (err) => {
       _bcRecognizer = null;
@@ -956,6 +972,20 @@ function bcRecord() {
     onEnd: () => { if (_bcRecognizer) { _bcRecognizer = null; $('bc-rec-indicator').style.display = 'none'; $('bc-record-btn').classList.remove('recording'); } }
   });
   _bcRecognizer.start();
+}
+
+function bcCelebrate(autoAdvance) {
+  const cel = $('bc-celebrate');
+  const sub = $('bc-celebrate-sub');
+  if (sub) sub.textContent = autoAdvance
+    ? u('次のステップへ移動中...', 'Moving to next step...')
+    : u('次へボタンで続けましょう！', 'Press Next to continue!');
+  if (cel) cel.classList.add('visible');
+  const delay = autoAdvance ? 1500 : 2000;
+  setTimeout(() => {
+    if (cel) cel.classList.remove('visible');
+    if (autoAdvance && _bcActive) bcNext();
+  }, delay);
 }
 
 function bcNext() {
