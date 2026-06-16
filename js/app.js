@@ -14,7 +14,8 @@ const App = {
   fileText: null,
   fileName: null,
   scene: null,              // {title, scene, turns:[{speaker,text,translation}], lang, level, topic}
-  sceneOpts: { lang: 'en', level: 'intermediate', topic: '' }
+  sceneOpts: { lang: 'en', level: 'intermediate', topic: '' },
+  tag: ''
 };
 
 let chunkRecognizer = null;
@@ -92,6 +93,12 @@ function stopAllAudio() {
   if (sp) sp.classList.remove('bc-focus');
   const ri = $('rec-indicator');
   if (ri) ri.classList.remove('visible');
+  _shadowActive = false;
+  if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
+  const si = $('shadow-indicator');
+  if (si) si.style.display = 'none';
+  const sb = $('shadow-btn');
+  if (sb) { sb.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
 }
 
 // ===== UI language helpers =====
@@ -161,9 +168,11 @@ function showScreen(name) {
 }
 
 function goHome() {
+  _maybeSaveHistory();
   stopAllAudio();
   updateResumeBanner();
   updateAiHint();
+  _updateTagChips();
   showScreen('home');
 }
 
@@ -197,6 +206,7 @@ function saveSession() {
     paragraphs: App.paragraphs,
     scores: App.scores,
     scene: App.scene,
+    tag: App.tag || '',
     ts: Date.now()
   });
 }
@@ -225,8 +235,10 @@ function resumeSession() {
   App.paragraphs = s.paragraphs;
   App.scores = s.scores || {};
   App.scene = s.scene || null;
+  App.tag = s.tag || '';
   if (App.scene && App.scene.lang) App.sceneOpts.lang = App.scene.lang;
   App.reviewMode = false;
+  _updateTagChips();
   buildFlow();
   showScreen('list');
 }
@@ -257,6 +269,16 @@ function setLang(choice) {
   App.langChoice = choice;
   document.querySelectorAll('#lang-seg .seg-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.lang === choice));
+}
+
+function setTag(tag) {
+  App.tag = tag;
+  _updateTagChips();
+}
+
+function _updateTagChips() {
+  document.querySelectorAll('#tag-chips .tag-chip').forEach(b =>
+    b.classList.toggle('active', b.dataset.tag === App.tag));
 }
 
 function setupDropzone() {
@@ -1464,6 +1486,194 @@ function rpShowSummary() {
     item.innerHTML = `<span class="rp-sum-text">${escHtml(x.t.text.slice(0, 50))}${x.t.text.length > 50 ? '…' : ''}</span>${badge}`;
     list.appendChild(item);
   });
+}
+
+// ===== 学習履歴 =====
+function _maybeSaveHistory() {
+  const done = App.flow.filter(s => App.scores[stepKey(s)] !== undefined).length;
+  if (!done) return;
+  const scoreVals = Object.values(App.scores).filter(n => typeof n === 'number');
+  const avgScore = scoreVals.length ? Math.round(scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length) : 0;
+  Store.saveHistory({
+    ts: Date.now(),
+    lang: App.lang,
+    tag: App.tag || '',
+    totalSteps: App.flow.length,
+    doneSteps: done,
+    avgScore,
+    source: App.source
+  });
+}
+
+function showHistory() {
+  const hist = Store.loadHistory();
+  if (!hist.length) {
+    $('history-empty').style.display = 'block';
+    $('history-chart-wrap').style.display = 'none';
+  } else {
+    $('history-empty').style.display = 'none';
+    $('history-chart-wrap').style.display = 'block';
+    _renderHistoryStats(hist);
+    _renderHistoryChart(hist);
+    _renderHistoryLog(hist);
+  }
+  showScreen('history');
+}
+
+function _calcStreak(hist) {
+  if (!hist.length) return 0;
+  const toKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+  const days = new Set(hist.map(e => toKey(e.ts)));
+  let streak = 0;
+  const d = new Date();
+  while (days.has(toKey(d.getTime()))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+function _renderHistoryStats(hist) {
+  const chunks = hist.reduce((a, e) => a + (e.doneSteps || 0), 0);
+  const scored = hist.filter(e => e.avgScore > 0);
+  const avgScore = scored.length ? Math.round(scored.reduce((a, e) => a + e.avgScore, 0) / scored.length) : 0;
+  $('history-stats').innerHTML = `
+    <div class="stat-item"><div class="stat-num">${hist.length}</div><div class="stat-lbl">セッション数</div></div>
+    <div class="stat-item"><div class="stat-num">${chunks}</div><div class="stat-lbl">総チャンク</div></div>
+    <div class="stat-item"><div class="stat-num">${avgScore}%</div><div class="stat-lbl">平均スコア</div></div>
+    <div class="stat-item"><div class="stat-num">${_calcStreak(hist)}日</div><div class="stat-lbl">連続日数</div></div>
+  `;
+}
+
+function _renderHistoryChart(hist) {
+  const toKey = ts => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push({ key: toKey(d.getTime()), label: `${d.getMonth()+1}/${d.getDate()}`, entries: [] });
+  }
+  hist.forEach(e => {
+    const day = days.find(x => x.key === toKey(e.ts));
+    if (day) day.entries.push(e);
+  });
+
+  const maxChunks = Math.max(1, ...days.map(d => d.entries.reduce((a, e) => a + e.doneSteps, 0)));
+  const barW = 36, gap = 4, padL = 4, H = 120;
+
+  let svgBars = '';
+  days.forEach((day, i) => {
+    const chunks = day.entries.reduce((a, e) => a + e.doneSteps, 0);
+    const scored = day.entries.filter(e => e.avgScore > 0);
+    const avg = scored.length ? Math.round(scored.reduce((a,e) => a + e.avgScore, 0) / scored.length) : 0;
+    const bh = chunks ? Math.max(6, Math.round((chunks / maxChunks) * (H - 20))) : 0;
+    const x = padL + i * (barW + gap);
+    const color = chunks === 0 ? '#E2E8F0' : avg >= 70 ? '#10B981' : avg >= 50 ? '#F59E0B' : '#EF4444';
+    svgBars += `<rect x="${x}" y="${H - bh}" width="${barW}" height="${bh}" rx="4" fill="${color}"/>`;
+    if (chunks > 0) svgBars += `<text x="${x + barW/2}" y="${H - bh - 4}" text-anchor="middle" font-size="9" fill="#64748B">${chunks}</text>`;
+  });
+  $('history-chart').innerHTML = svgBars;
+  $('history-chart-dates').innerHTML = days.map((d, i) =>
+    `<span class="date-cell${i === 13 ? ' today' : ''}">${d.label}</span>`
+  ).join('');
+}
+
+function _renderHistoryLog(hist) {
+  const recent = [...hist].reverse().slice(0, 20);
+  $('history-log').innerHTML = recent.map(e => {
+    const d = new Date(e.ts);
+    const date = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const tag = e.tag ? `<span class="log-tag">${escHtml(e.tag)}</span>` : '';
+    const pct = e.totalSteps ? Math.round((e.doneSteps / e.totalSteps) * 100) : 0;
+    const sc = e.avgScore >= 70 ? '#10B981' : e.avgScore >= 50 ? '#F59E0B' : '#EF4444';
+    return `<div class="log-item">
+      <div class="log-meta"><span class="log-date">${escHtml(date)}</span>${tag}<span class="log-lang">${e.lang === 'en' ? '🇺🇸' : '🇯🇵'}</span></div>
+      <div class="log-detail">${e.doneSteps}/${e.totalSteps}チャンク（${pct}%完了）${e.avgScore ? `<span style="color:${sc};font-weight:700;"> 平均${e.avgScore}%</span>` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== シャドーイングモード =====
+let _shadowActive = false;
+let _shadowRecognizer = null;
+
+function toggleShadow() {
+  if (_shadowActive) { stopShadowing(); return; }
+  startShadowing();
+}
+
+function startShadowing() {
+  if (!Speech.supported()) {
+    alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.'));
+    return;
+  }
+  stopAllAudio();
+  _shadowActive = true;
+  const btn = $('shadow-btn');
+  btn.classList.add('shadowing');
+  $('shadow-icon').textContent = '⏸';
+  $('shadow-label').textContent = u('シャドーイング停止', 'Stop Shadowing');
+  $('shadow-indicator').style.display = 'flex';
+  $('shadow-status').textContent = u('シャドーイング中... ネイティブに続いて話してください（ヘッドフォン推奨）', 'Shadowing… speak after the native speaker (headphones recommended)');
+
+  const step = currentStep();
+  const text = App.paragraphs[step.p].chunks[step.c];
+
+  _shadowRecognizer = Speech.createRecognizer({
+    lang: App.lang,
+    continuous: true,
+    onInterim: (t) => {
+      $('result-text').textContent = '"' + t + '"';
+      $('chunk-result-legend').style.display = 'none';
+      $('result-area').classList.add('visible');
+    },
+    onEnd: (final) => {
+      const wasActive = _shadowActive;
+      _shadowActive = false;
+      $('shadow-indicator').style.display = 'none';
+      if (btn) { btn.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
+      _shadowRecognizer = null;
+      if (wasActive && final) {
+        const score = Score.calc(text, final, App.lang);
+        $('result-text').innerHTML = Score.highlight(text, final, App.lang);
+        $('chunk-result-legend').style.display = '';
+        $('result-area').classList.add('visible');
+        showChunkScore(score);
+        const prev = App.scores[stepKey(step)];
+        if (prev === undefined || score > prev) {
+          App.scores[stepKey(step)] = score;
+          saveSession();
+          updatePracticeProgress();
+          updateCompletionBanner();
+        }
+      }
+    }
+  });
+  _shadowRecognizer.start();
+
+  setTimeout(() => {
+    if (!_shadowActive) return;
+    _speakScreen = 'screen-practice';
+    _setSpeakBtns('screen-practice', true);
+    Speech.speak(text, App.lang, 1.0, () => {
+      _speakScreen = null;
+      _setSpeakBtns('screen-practice', false);
+      if (!_shadowActive) return;
+      $('shadow-status').textContent = u('話し終えてください... 録音を停止します', 'Finish speaking... stopping');
+      setTimeout(() => { if (_shadowRecognizer) _shadowRecognizer.stop(); }, 1500);
+    });
+  }, 300);
+}
+
+function stopShadowing() {
+  _shadowActive = false;
+  Speech.stop();
+  if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
+  $('shadow-indicator').style.display = 'none';
+  const btn = $('shadow-btn');
+  if (btn) { btn.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
 }
 
 // ===== Init =====

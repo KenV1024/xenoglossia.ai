@@ -837,6 +837,89 @@ textarea::placeholder { color: #94A3B8; }
 }
 .error-box.visible { display: block; }
 
+/* ===== タグチップ ===== */
+.tag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  padding: 5px 12px;
+  background: white; border: 1.5px solid #E2E8F0;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: #64748B;
+  cursor: pointer; font-family: inherit; transition: all 0.12s;
+}
+.tag-chip:hover { border-color: #4F46E5; color: #4F46E5; }
+.tag-chip.active { background: #4F46E5; color: white; border-color: #4F46E5; }
+
+/* ===== シャドーイング ===== */
+.btn-shadow {
+  display: block; width: 100%;
+  padding: 11px 16px; margin-bottom: 12px;
+  background: linear-gradient(135deg, #FDF4FF 0%, #EEF2FF 100%);
+  border: 2px dashed #DDD6FE; border-radius: 10px;
+  font-size: 13px; font-weight: 600; color: #7C3AED;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.btn-shadow:hover { background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%); color: white; border-style: solid; border-color: transparent; }
+.btn-shadow.shadowing { background: #FDF4FF; color: #7C3AED; border-color: #DDD6FE; border-style: solid; animation: pulse 1.4s infinite; }
+
+.shadow-indicator {
+  display: none;
+  background: #7C3AED; color: white;
+  padding: 14px 16px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; text-align: center;
+  margin-bottom: 12px;
+  align-items: center; justify-content: center; gap: 10px;
+}
+
+/* BCフォーカスモードでシャドーイングも非表示 */
+#screen-practice.bc-focus .btn-shadow,
+#screen-practice.bc-focus .shadow-indicator { display: none !important; }
+
+/* ===== 学習履歴画面 ===== */
+.history-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; margin-bottom: 20px;
+}
+.stat-item {
+  background: white; border: 1px solid #E2E8F0;
+  border-radius: 10px; padding: 14px 8px; text-align: center;
+}
+.stat-num { font-size: 20px; font-weight: 800; color: #4F46E5; }
+.stat-lbl { font-size: 11px; color: #94A3B8; font-weight: 600; margin-top: 4px; }
+
+.history-chart-label {
+  font-size: 12px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.history-chart-box {
+  background: white; border: 1px solid #E2E8F0;
+  border-radius: 10px; padding: 12px; margin-bottom: 6px; overflow: hidden;
+}
+.history-dates {
+  display: flex; margin-bottom: 16px; padding: 0 12px;
+}
+.date-cell { flex: 1; text-align: center; font-size: 10px; color: #94A3B8; font-weight: 600; }
+.date-cell.today { color: #4F46E5; font-weight: 800; }
+
+.history-log { display: grid; gap: 8px; margin-top: 8px; }
+.log-item {
+  background: white; border: 1px solid #E2E8F0;
+  border-radius: 10px; padding: 12px 14px;
+}
+.log-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.log-date { font-size: 12px; color: #94A3B8; }
+.log-tag {
+  font-size: 11px; font-weight: 700;
+  background: #EEF2FF; color: #4F46E5;
+  padding: 2px 8px; border-radius: 999px;
+}
+.log-lang { font-size: 14px; }
+.log-detail { font-size: 13px; color: #475569; }
+
+.history-empty {
+  text-align: center; color: #94A3B8;
+  font-size: 14px; line-height: 1.8; padding: 40px 0;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 400px) {
   .english-text { font-size: 18px; }

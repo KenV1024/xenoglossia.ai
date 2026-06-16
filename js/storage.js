@@ -38,5 +38,19 @@ const Store = {
   },
   clearSession() {
     localStorage.removeItem(this.KEY_SESSION);
-  }
+  },
+
+  KEY_HISTORY: 'sc_history',
+  saveHistory(entry) {
+    const h = this.loadHistory();
+    h.push(entry);
+    try { localStorage.setItem(this.KEY_HISTORY, JSON.stringify(h.slice(-90))); } catch(e) {}
+  },
+  loadHistory() {
+    try {
+      const r = localStorage.getItem(this.KEY_HISTORY);
+      return r ? JSON.parse(r) : [];
+    } catch { return []; }
+  },
+  clearHistory() { localStorage.removeItem(this.KEY_HISTORY); }
 };
