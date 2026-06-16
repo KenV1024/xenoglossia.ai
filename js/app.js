@@ -81,13 +81,13 @@ function stopAllAudio() {
   rpStopAll();
   _cycleActive = false;
   const cb = $('cycle-btn');
-  if (cb) { cb.classList.remove('cycling'); $('cycle-label').textContent = u('3-Step Drill (listen → slow → speak)', '3ステップ練習（聞く → ゆっくり → 録音）'); $('cycle-icon').textContent = '🔄'; }
+  if (cb) { cb.classList.remove('cycling'); $('cycle-label').textContent = u('3ステップ練習（聞く → ゆっくり → 録音）', '3-Step Drill (listen → slow → speak)'); $('cycle-icon').textContent = '🔄'; }
   _bcActive = false;
   if (_bcRecognizer) { _bcRecognizer.abort(); _bcRecognizer = null; }
   const bcPanel = $('bc-panel');
   if (bcPanel) bcPanel.style.display = 'none';
   const bcBtn = $('bc-btn');
-  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('Back-chaining Drill', 'バックチェイニング練習（末尾から積み上げ）'); $('bc-icon').textContent = '⬅'; }
+  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('バックチェイニング練習（末尾から積み上げ）', 'Back-chaining Drill'); $('bc-icon').textContent = '⬅'; }
 }
 
 // ===== UI language helpers =====
@@ -740,7 +740,7 @@ function playCycle() {
   const btn = $('cycle-btn');
   btn.classList.add('cycling');
   $('cycle-icon').textContent = '⏸';
-  $('cycle-label').textContent = u('Stop', '停止');
+  $('cycle-label').textContent = u('停止', 'Stop');
 
   const step = currentStep();
   const text = App.paragraphs[step.p].chunks[step.c];
@@ -748,12 +748,12 @@ function playCycle() {
   const runStep = (stepNum) => {
     if (!_cycleActive) return;
     if (stepNum === 1) {
-      $('cycle-label').textContent = u('Step 1/3: Listening…', '1/3 通常再生中…');
+      $('cycle-label').textContent = u('1/3 通常再生中…', 'Step 1/3: Listening…');
       _speakScreen = 'screen-practice';
       _setSpeakBtns('screen-practice', true);
       Speech.speak(text, App.lang, 1.0, () => { if (_cycleActive) setTimeout(() => runStep(2), 500); else _setSpeakBtns('screen-practice', false); });
     } else if (stepNum === 2) {
-      $('cycle-label').textContent = u('Step 2/3: Slow…', '2/3 ゆっくり再生中…');
+      $('cycle-label').textContent = u('2/3 ゆっくり再生中…', 'Step 2/3: Slow…');
       Speech.speak(text, App.lang, 0.65, () => {
         if (!_cycleActive) { _speakScreen = null; _setSpeakBtns('screen-practice', false); return; }
         _speakScreen = null;
@@ -764,7 +764,7 @@ function playCycle() {
       _cycleActive = false;
       btn.classList.remove('cycling');
       $('cycle-icon').textContent = '🔄';
-      $('cycle-label').textContent = u('3-Step Drill (listen → slow → speak)', '3ステップ練習（聞く → ゆっくり → 録音）');
+      $('cycle-label').textContent = u('3ステップ練習（聞く → ゆっくり → 録音）', '3-Step Drill (listen → slow → speak)');
       startChunkRecording();
     }
   };
@@ -804,7 +804,7 @@ function startBackchain() {
   _bcIdx = 0;
   $('bc-panel').style.display = 'block';
   $('bc-btn').classList.add('active');
-  $('bc-btn-label').textContent = u('End', '終了');
+  $('bc-btn-label').textContent = u('終了', 'End');
   $('bc-icon').textContent = '⬛';
   bcRenderStep();
   bcPlay();
@@ -817,21 +817,21 @@ function stopBackchain() {
   const bcPanel = $('bc-panel');
   if (bcPanel) bcPanel.style.display = 'none';
   const bcBtn = $('bc-btn');
-  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('Back-chaining Drill', 'バックチェイニング練習（末尾から積み上げ）'); $('bc-icon').textContent = '⬅'; }
+  if (bcBtn) { bcBtn.classList.remove('active'); $('bc-btn-label').textContent = u('バックチェイニング練習（末尾から積み上げ）', 'Back-chaining Drill'); $('bc-icon').textContent = '⬅'; }
 }
 
 function bcRenderStep() {
   const phrase = _bcSteps[_bcIdx];
   const total = _bcSteps.length;
-  $('bc-step-tag').textContent = u(`Step ${_bcIdx + 1}/${total}`, `ステップ ${_bcIdx + 1}/${total}`);
+  $('bc-step-tag').textContent = u(`ステップ ${_bcIdx + 1}/${total}`, `Step ${_bcIdx + 1}/${total}`);
   $('bc-phrase').textContent = phrase;
   $('bc-result-text').style.display = 'none';
   $('bc-result-text').innerHTML = '';
   $('bc-score-row').style.display = 'none';
   const rec = $('bc-record-btn');
   rec.classList.remove('recording');
-  rec.textContent = u('🎤 Speak', '🎤 話す');
-  $('bc-next-btn').textContent = _bcIdx === total - 1 ? u('Finish ✓', '完了 ✓') : u('Next →', '次へ →');
+  rec.textContent = u('🎤 話す', '🎤 Speak');
+  $('bc-next-btn').textContent = _bcIdx === total - 1 ? u('完了 ✓', 'Finish ✓') : u('次へ →', 'Next →');
 }
 
 function bcPlay() {
@@ -846,13 +846,13 @@ function bcRecord() {
   if (_bcRecognizer) {
     _bcRecognizer.abort(); _bcRecognizer = null;
     $('bc-record-btn').classList.remove('recording');
-    $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+    $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
     return;
   }
   Speech.stop();
   const phrase = _bcSteps[_bcIdx];
   $('bc-record-btn').classList.add('recording');
-  $('bc-record-btn').textContent = u('⏸ Stop', '⏸ 停止');
+  $('bc-record-btn').textContent = u('⏸ 停止', '⏸ Stop');
   _bcRecognizer = Speech.createRecognizer({
     lang: App.lang,
     continuous: false,
@@ -863,7 +863,7 @@ function bcRecord() {
     onFinal: (transcript) => {
       _bcRecognizer = null;
       $('bc-record-btn').classList.remove('recording');
-      $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+      $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
       const score = Score.calc(phrase, transcript, App.lang);
       const fb = Score.feedback(score, App.lang);
       $('bc-result-text').innerHTML = Score.highlight(phrase, transcript, App.lang);
@@ -877,7 +877,7 @@ function bcRecord() {
     onError: (err) => {
       _bcRecognizer = null;
       $('bc-record-btn').classList.remove('recording');
-      $('bc-record-btn').textContent = u('🎤 Speak', '🎤 話す');
+      $('bc-record-btn').textContent = u('🎤 話す', '🎤 Speak');
       if (err === 'no-speech') {
         $('bc-result-text').textContent = u('音声が検出されませんでした', 'No speech detected');
         $('bc-result-text').style.display = 'block';
