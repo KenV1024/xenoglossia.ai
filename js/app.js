@@ -94,11 +94,12 @@ function stopAllAudio() {
   const ri = $('rec-indicator');
   if (ri) ri.classList.remove('visible');
   _shadowActive = false;
+  if (_shadowCountdownTimer) { clearTimeout(_shadowCountdownTimer); _shadowCountdownTimer = null; }
   if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
   const si = $('shadow-indicator');
-  if (si) si.style.display = 'none';
+  if (si) { si.style.display = 'none'; delete si.dataset.phase; }
   const sb = $('shadow-btn');
-  if (sb) { sb.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
+  if (sb) { sb.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブ音声の後に発音）', 'Shadowing (speak after native)'); }
 }
 
 // ===== UI language helpers =====
@@ -1596,8 +1597,11 @@ function _renderHistoryLog(hist) {
 }
 
 // ===== シャドーイングモード =====
+// フロー: TTS再生（聞く）→ カウントダウン3-2-1 → STT録音（話す）→ 採点
+// STTをTTS後に開始することでAI音声の拾い込みを防ぐ
 let _shadowActive = false;
 let _shadowRecognizer = null;
+let _shadowCountdownTimer = null;
 
 function toggleShadow() {
   if (_shadowActive) { stopShadowing(); return; }
@@ -1611,33 +1615,61 @@ function startShadowing() {
   }
   stopAllAudio();
   _shadowActive = true;
-  const btn = $('shadow-btn');
-  btn.classList.add('shadowing');
+  $('shadow-btn').classList.add('shadowing');
   $('shadow-icon').textContent = '⏸';
   $('shadow-label').textContent = u('シャドーイング停止', 'Stop Shadowing');
-  $('shadow-indicator').style.display = 'flex';
-  $('shadow-status').textContent = u('シャドーイング中... ネイティブに続いて話してください（ヘッドフォン推奨）', 'Shadowing… speak after the native speaker (headphones recommended)');
 
   const step = currentStep();
   const text = App.paragraphs[step.p].chunks[step.c];
 
+  // フェーズ1: TTS再生（聞くフェーズ）
+  _setShadowPhase('listening', u('🔊 まず聞いてください...', '🔊 Listen carefully...'));
+  _speakScreen = 'screen-practice';
+  _setSpeakBtns('screen-practice', true);
+  Speech.speak(text, App.lang, 1.0, () => {
+    _speakScreen = null;
+    _setSpeakBtns('screen-practice', false);
+    if (!_shadowActive) return;
+    // フェーズ2: カウントダウン
+    _shadowDoCountdown(3, text, step);
+  });
+}
+
+function _setShadowPhase(phase, statusText) {
+  const si = $('shadow-indicator');
+  si.style.display = 'flex';
+  si.dataset.phase = phase;
+  $('shadow-status').textContent = statusText;
+}
+
+function _shadowDoCountdown(n, text, step) {
+  if (!_shadowActive) return;
+  if (n === 0) {
+    _setShadowPhase('recording', u('🎤 話してください！（自動で採点します）', '🎤 Speak now! (auto-scores)'));
+    _startShadowRecording(text, step);
+    return;
+  }
+  _setShadowPhase('counting', String(n));
+  _shadowCountdownTimer = setTimeout(() => _shadowDoCountdown(n - 1, text, step), 800);
+}
+
+function _startShadowRecording(text, step) {
   _shadowRecognizer = Speech.createRecognizer({
     lang: App.lang,
-    continuous: true,
+    continuous: false,
     onInterim: (t) => {
       $('result-text').textContent = '"' + t + '"';
       $('chunk-result-legend').style.display = 'none';
       $('result-area').classList.add('visible');
     },
-    onEnd: (final) => {
+    onFinal: (transcript) => {
+      _shadowRecognizer = null;
       const wasActive = _shadowActive;
       _shadowActive = false;
-      $('shadow-indicator').style.display = 'none';
-      if (btn) { btn.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
-      _shadowRecognizer = null;
-      if (wasActive && final) {
-        const score = Score.calc(text, final, App.lang);
-        $('result-text').innerHTML = Score.highlight(text, final, App.lang);
+      _cleanupShadowUI();
+      if (wasActive && transcript) {
+        const score = Score.calc(text, transcript, App.lang);
+        $('result-text').innerHTML = Score.highlight(text, transcript, App.lang);
         $('chunk-result-legend').style.display = '';
         $('result-area').classList.add('visible');
         showChunkScore(score);
@@ -1649,31 +1681,40 @@ function startShadowing() {
           updateCompletionBanner();
         }
       }
+    },
+    onError: (err) => {
+      _shadowRecognizer = null;
+      _shadowActive = false;
+      _cleanupShadowUI();
+      if (err === 'no-speech') {
+        $('result-text').textContent = u('音声が検出されませんでした', 'No speech detected');
+        $('result-area').classList.add('visible');
+      }
+    },
+    onEnd: () => {
+      if (_shadowRecognizer) { _shadowRecognizer = null; _shadowActive = false; _cleanupShadowUI(); }
     }
   });
   _shadowRecognizer.start();
+}
 
-  setTimeout(() => {
-    if (!_shadowActive) return;
-    _speakScreen = 'screen-practice';
-    _setSpeakBtns('screen-practice', true);
-    Speech.speak(text, App.lang, 1.0, () => {
-      _speakScreen = null;
-      _setSpeakBtns('screen-practice', false);
-      if (!_shadowActive) return;
-      $('shadow-status').textContent = u('話し終えてください... 録音を停止します', 'Finish speaking... stopping');
-      setTimeout(() => { if (_shadowRecognizer) _shadowRecognizer.stop(); }, 1500);
-    });
-  }, 300);
+function _cleanupShadowUI() {
+  const si = $('shadow-indicator');
+  if (si) { si.style.display = 'none'; delete si.dataset.phase; }
+  const btn = $('shadow-btn');
+  if (btn) {
+    btn.classList.remove('shadowing');
+    $('shadow-icon').textContent = '🎭';
+    $('shadow-label').textContent = u('シャドーイング（ネイティブ音声の後に発音）', 'Shadowing (speak after native)');
+  }
 }
 
 function stopShadowing() {
   _shadowActive = false;
+  if (_shadowCountdownTimer) { clearTimeout(_shadowCountdownTimer); _shadowCountdownTimer = null; }
   Speech.stop();
   if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
-  $('shadow-indicator').style.display = 'none';
-  const btn = $('shadow-btn');
-  if (btn) { btn.classList.remove('shadowing'); $('shadow-icon').textContent = '🎭'; $('shadow-label').textContent = u('シャドーイング（ネイティブに続いて発音）', 'Shadowing (speak after native)'); }
+  _cleanupShadowUI();
 }
 
 // ===== Init =====

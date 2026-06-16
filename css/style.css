@@ -868,7 +868,18 @@ textarea::placeholder { color: #94A3B8; }
   font-size: 14px; font-weight: 700; text-align: center;
   margin-bottom: 12px;
   align-items: center; justify-content: center; gap: 10px;
+  transition: background 0.3s;
 }
+.shadow-indicator[data-phase="listening"] { background: #3B82F6; }
+.shadow-indicator[data-phase="counting"] {
+  background: #D97706;
+  flex-direction: column; gap: 0; padding: 18px 16px;
+}
+.shadow-indicator[data-phase="counting"] .rec-dot { display: none; }
+.shadow-indicator[data-phase="counting"] #shadow-status {
+  font-size: 3.5rem; font-weight: 900; line-height: 1;
+}
+.shadow-indicator[data-phase="recording"] { background: #7C3AED; }
 
 /* BCフォーカスモードでシャドーイングも非表示 */
 #screen-practice.bc-focus .btn-shadow,
