@@ -957,3 +957,97 @@ textarea::placeholder { color: #94A3B8; }
   .action-btn { font-size: 11px; padding: 9px 3px; }
   .topic-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ===== 自己紹介トピック ホームカード ===== */
+.home-card-topics {
+  cursor: pointer;
+  background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
+  border: 1.5px solid #6EE7B7;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.home-card-topics:hover { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); box-shadow: 0 2px 12px rgba(16,185,129,0.18); }
+.home-card-topics h2 { color: #059669; }
+.btn-topics-arrow { font-size: 14px; font-weight: 700; color: #059669; margin-top: 8px; }
+
+/* ===== Screen: Topics ===== */
+.topics-intro {
+  font-size: 13px; color: #64748B; line-height: 1.7;
+  margin-bottom: 14px; padding: 10px 12px;
+  background: #F8FAFC; border-radius: 8px;
+  border-left: 3px solid #6EE7B7;
+}
+.topics-intro strong { color: #059669; }
+
+/* トピック一覧アイテム */
+.topic-item {
+  display: flex; align-items: center; gap: 12px;
+  background: white; border: 1px solid #E2E8F0;
+  border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 8px; cursor: pointer;
+  transition: all 0.15s;
+}
+.topic-item:hover { background: #F8FAFC; border-color: #A5B4FC; }
+.topic-item.done { border-left: 3px solid #10B981; }
+.topic-item.practicing { border-left: 3px solid #F59E0B; }
+
+.ti-num {
+  font-size: 12px; font-weight: 700; color: #94A3B8;
+  min-width: 22px; text-align: center;
+}
+.ti-body { flex: 1; min-width: 0; }
+.ti-title { font-size: 14px; font-weight: 700; color: #1E293B; }
+.ti-desc  { font-size: 11px; color: #94A3B8; margin-top: 2px; }
+.ti-badge { flex-shrink: 0; }
+.ti-custom { font-size: 11px; color: #059669; }
+
+.tl-badge {
+  font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; white-space: nowrap;
+}
+.tl-done      { background: #D1FAE5; color: #065F46; }
+.tl-practicing { background: #FEF3C7; color: #92400E; }
+.tl-unstarted  { background: #F1F5F9; color: #94A3B8; }
+
+/* トピック詳細カード */
+.topic-detail-card {
+  background: white; border: 1px solid #E2E8F0;
+  border-radius: 14px; padding: 20px; margin-top: 8px;
+}
+.td-title { font-size: 18px; font-weight: 800; color: #1E293B; margin-bottom: 4px; }
+.td-desc  { font-size: 13px; color: #64748B; margin-bottom: 8px; }
+.td-score { font-size: 12px; font-weight: 700; color: #059669; margin-bottom: 6px; }
+.td-saved-badge {
+  font-size: 11px; color: #065F46; background: #D1FAE5;
+  border: 1px solid #6EE7B7; border-radius: 6px;
+  padding: 4px 10px; margin-bottom: 10px;
+}
+.td-hint {
+  font-size: 12px; color: #94A3B8; margin-bottom: 8px; font-style: italic;
+}
+.td-text {
+  font-size: 16px; font-weight: 600; color: #1E293B; line-height: 1.8;
+  background: #F8FAFC; border: 1px solid #E2E8F0;
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+.td-edit-btn {
+  background: none; border: 1.5px solid #CBD5E1;
+  border-radius: 8px; padding: 7px 14px;
+  font-size: 13px; color: #475569; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.td-edit-btn:hover { background: #F8FAFC; border-color: #A5B4FC; color: #4F46E5; }
+
+.td-textarea {
+  width: 100%; border: 1.5px solid #A5B4FC;
+  border-radius: 8px; padding: 12px; font-size: 15px;
+  font-family: inherit; line-height: 1.7; resize: vertical;
+  outline: none; color: #1E293B;
+  margin-bottom: 10px;
+}
+.td-textarea:focus { border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+.td-edit-actions {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  justify-content: flex-end;
+}

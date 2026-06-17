@@ -115,6 +115,12 @@
       <button class="btn btn-primary" id="start-btn" onclick="startTextPractice()">練習を開始する →</button>
     </div>
 
+    <div class="home-card home-card-topics" onclick="showTopics()">
+      <h2>🗣 自己紹介の練習</h2>
+      <div class="card-desc">30のテーマを順番に練習して、初対面の相手に自分のことを自由に話せるようになります。プリセット文章を自分用に書き換えて保存できます。</div>
+      <div class="btn-topics-arrow">練習を始める →</div>
+    </div>
+
     <div class="home-card">
       <h2>🤖 AI会話シーンで練習</h2>
       <div class="card-desc">トピックとレベルを選ぶと、AIが自然な会話シーンを生成。ロールプレイで実際の会話に近い練習ができます。<span id="ai-key-hint"></span></div>
@@ -138,7 +144,7 @@
   <div class="container">
     <div class="list-top">
       <h2 id="list-title">練習メニュー</h2>
-      <button onclick="goHome()">← ホーム</button>
+      <button id="list-back-btn" onclick="goHome()">← ホーム</button>
     </div>
 
     <div class="progress-label">
@@ -478,6 +484,68 @@
   </div>
 </div>
 
+<!-- ===== Screen: Topics (30コア自己紹介) ===== -->
+<div class="screen" id="screen-topics">
+  <div class="container">
+
+    <!-- リスト表示 -->
+    <div id="topic-list-view">
+      <div class="list-top">
+        <h2>🗣 自己紹介の練習</h2>
+        <button onclick="goHome()">← ホーム</button>
+      </div>
+      <div class="topics-intro">30のテーマを順番に練習して、自分のことを英語で自由に話せるようになりましょう。<strong>[ ]</strong> の部分は自分の内容に書き換えられます。</div>
+
+      <div class="progress-label">
+        <span id="topic-progress-text">習得済み: 0 / 30</span>
+        <span id="topic-progress-pct">0%</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-fill" id="topic-progress-fill" style="width:0%"></div>
+      </div>
+
+      <div id="topic-list"></div>
+    </div>
+
+    <!-- 詳細表示 -->
+    <div id="topic-detail-view" style="display:none;">
+      <div class="list-top">
+        <h2 id="td-num">トピック 1 / 30</h2>
+        <button onclick="topicBackToList()">← 一覧</button>
+      </div>
+
+      <div class="topic-detail-card">
+        <h3 id="td-title" class="td-title"></h3>
+        <div class="td-desc" id="td-desc"></div>
+        <div class="td-score" id="td-score" style="display:none;"></div>
+        <div class="td-saved-badge" id="td-saved-badge" style="display:none;">
+          💾 カスタム保存済み（ブラウザのデータを消すと消えます）
+        </div>
+
+        <!-- テキスト表示 -->
+        <div id="td-text-wrap">
+          <div class="td-hint">[ ] の部分を自分の情報に書き換えて練習しましょう</div>
+          <div class="td-text" id="td-text"></div>
+          <button class="td-edit-btn" onclick="topicStartEdit()">✏ 自分の文章に書き換える</button>
+        </div>
+
+        <!-- 編集エリア -->
+        <div id="td-edit-wrap" style="display:none;">
+          <textarea class="td-textarea" id="td-textarea" rows="5" placeholder="自分の内容に書き換えてください..."></textarea>
+          <div class="td-edit-actions">
+            <button class="btn btn-secondary" style="width:auto;padding:10px 14px;" onclick="topicResetPreset()">元に戻す</button>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 14px;" onclick="topicCancelEdit()">キャンセル</button>
+            <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="topicSave()">💾 保存する</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="startTopicPractice()">▶ このトピックを練習する</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ===== Screen: History ===== -->
 <div class="screen" id="screen-history">
   <div class="container">
@@ -513,6 +581,7 @@
 <script src="js/parser.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/app.js"></script>
+<script src="js/topics.js"></script>
 
 <script>
   if ('serviceWorker' in navigator) {

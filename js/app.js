@@ -16,7 +16,8 @@ const App = {
   scene: null,              // {title, scene, turns:[{speaker,text,translation}], lang, level, topic}
   sceneOpts: { lang: 'en', level: 'intermediate', topic: '' },
   tag: '',
-  sessionCreatedTs: null    // セッション開始日時（復習判定に使用）
+  sessionCreatedTs: null,   // セッション開始日時（復習判定に使用）
+  topicId: null             // 練習中のトピックID（null = 自由テキスト）
 };
 
 let chunkRecognizer = null;
@@ -163,6 +164,7 @@ function showScreen(name) {
 }
 
 function goHome() {
+  _maybeUpdateTopicProgress();
   _maybeSaveHistory();
   stopAllAudio();
   updateResumeBanner();
@@ -365,6 +367,29 @@ function startTextPractice() {
   showScreen('list');
 }
 
+// トピック練習用: テキストを直接渡して練習開始
+function startTextPracticeWithText(text, topicId) {
+  App.topicId  = topicId;
+  App.tag      = '';
+  const lang   = 'en';
+  App.lang     = lang;
+  App.source   = 'text';
+  refreshLangUI();
+  const ex      = Parser.extract(text);
+  const targets = ex.en.length ? ex.en : [text.trim()];
+  App.paragraphs = targets.map(t => ({
+    chunks: Chunker.split(t, lang),
+    translation: null,
+    chunkTranslations: []
+  })).filter(p => p.chunks.length);
+  App.scores           = {};
+  App.reviewMode       = false;
+  App.sessionCreatedTs = Date.now();
+  buildFlow();
+  saveSession();
+  showScreen('list');
+}
+
 // ===== Flow =====
 function buildFlow() {
   const flow = [];
@@ -467,6 +492,18 @@ function _getReviewParaIndices() {
 
 // ===== List UI =====
 function updateListUI() {
+  // トピック練習中はリスト画面の「戻る」をトピック一覧へ変更
+  const lbb = $('list-back-btn');
+  if (lbb) {
+    if (App.topicId) {
+      lbb.textContent = '← トピック一覧';
+      lbb.onclick = () => { _maybeUpdateTopicProgress(); renderTopicList(); showScreen('topics'); };
+    } else {
+      lbb.textContent = '← ホーム';
+      lbb.onclick = goHome;
+    }
+  }
+
   $('list-title').textContent = App.source === 'scene' && App.scene
     ? '🤖 ' + App.scene.title : u('練習メニュー', 'Practice Menu');
 
