@@ -496,8 +496,13 @@ function updateListUI() {
   const lbb = $('list-back-btn');
   if (lbb) {
     if (App.topicId) {
-      lbb.textContent = '← トピック一覧';
-      lbb.onclick = () => { _maybeUpdateTopicProgress(); renderTopicList(); showScreen('topics'); };
+      lbb.textContent = '← トピックに戻る';
+      lbb.onclick = () => {
+        const tid = App.topicId;
+        _maybeUpdateTopicProgress();   // スコアがあれば保存・topicId をクリア
+        showTopicDetail(tid);          // 詳細ビューを再表示
+        showScreen('topics');
+      };
     } else {
       lbb.textContent = '← ホーム';
       lbb.onclick = goHome;
