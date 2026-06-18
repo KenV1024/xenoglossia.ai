@@ -90,7 +90,9 @@ const TopicStore = {
     try {
       const d = JSON.parse(localStorage.getItem(this.KEY_PROGRESS) || '{}');
       const prev = d[id];
-      d[id] = { done: true, score: prev ? Math.max(prev.score || 0, score) : score, ts: Date.now() };
+      const best = prev ? Math.max(prev.score || 0, score) : score;
+      const days = score >= 80 ? 3 : score >= 60 ? 1 : 0;
+      d[id] = { done: true, score: best, ts: Date.now(), nextReview: Date.now() + days * 86400000 };
       localStorage.setItem(this.KEY_PROGRESS, JSON.stringify(d));
     } catch(e) {}
   },
@@ -111,13 +113,21 @@ function showTopics() {
 function renderTopicList() {
   const progress = TopicStore.getAllProgress();
   const custom = TopicStore.getAllCustom();
+  const now = Date.now();
   let doneCount = 0;
+  let dueCount = 0;
 
-  $('topic-list').innerHTML = TOPICS.map(t => {
+  const itemsHtml = TOPICS.map(t => {
     const p = progress[t.id];
+    const isDue = p && p.nextReview && p.nextReview <= now;
     const hasCustom = !!custom[t.id];
     let badgeHtml, cls = '';
-    if (p && p.score >= 70) {
+    if (isDue) {
+      badgeHtml = '<span class="tl-badge tl-due">📅 復習</span>';
+      cls = p.score >= 70 ? 'done' : 'practicing';
+      dueCount++;
+      if (p.score >= 70) doneCount++;
+    } else if (p && p.score >= 70) {
       badgeHtml = '<span class="tl-badge tl-done">✅ 習得</span>';
       cls = 'done';
       doneCount++;
@@ -138,6 +148,17 @@ function renderTopicList() {
         <div class="ti-badge">${badgeHtml}</div>
       </div>`;
   }).join('');
+
+  const dueBanner = dueCount > 0
+    ? `<div class="srs-due-banner">
+        <span class="srs-due-icon">📅</span>
+        <div class="srs-due-body">
+          <div class="srs-due-title">今日の復習: ${dueCount}トピック</div>
+          <div class="srs-due-sub">前回のスコアに基づく復習タイミングです</div>
+        </div>
+       </div>`
+    : '';
+  $('topic-list').innerHTML = dueBanner + itemsHtml;
 
   const pct = Math.round((doneCount / 30) * 100);
   $('topic-progress-text').textContent = `習得済み: ${doneCount} / 30`;

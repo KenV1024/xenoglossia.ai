@@ -45,6 +45,24 @@
   </div>
 </div>
 
+<!-- Shadowing Warning Modal -->
+<div class="modal-overlay" id="shadow-modal">
+  <div class="modal-box">
+    <h3>🎧 シャドーイング練習</h3>
+    <div class="shadow-warning-box">
+      <strong>⚠ イヤホン・ヘッドホンが必須です</strong><br>
+      スピーカーで使用するとAIの音声をマイクが拾い、正しく採点できません。
+    </div>
+    <p style="font-size:13px;color:#475569;margin:0 0 16px;line-height:1.6;">
+      AIが英語を読み上げると同時に録音が始まります。<br>AIより2〜3語遅れて発音してください。
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="shadowModalConfirm()">イヤホン使用中・始める</button>
+      <button class="btn btn-secondary" onclick="closeShadowModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-box">
@@ -249,6 +267,10 @@
 
     <button class="btn-backchain" id="bc-btn" onclick="startBackchain()">
       <span id="bc-icon">⬅</span> <span id="bc-btn-label">バックチェイニング練習（末尾から積み上げ）</span>
+    </button>
+
+    <button class="btn-shadow" id="shadow-btn" onclick="startShadowing()">
+      <span>🎧</span> <span id="shadow-label">シャドーイング練習（AIと同時に発音）</span>
     </button>
 
     <div class="bc-panel" id="bc-panel" style="display:none;">

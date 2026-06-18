@@ -95,6 +95,10 @@ function stopAllAudio() {
   if (sp) sp.classList.remove('bc-focus');
   const ri = $('rec-indicator');
   if (ri) ri.classList.remove('visible');
+  _shadowActive = false;
+  if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
+  const shBtn = $('shadow-btn');
+  if (shBtn) { shBtn.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
 }
 
 // ===== UI language helpers =====
@@ -196,6 +200,13 @@ function updateAiHint() {
 
 // ===== Session Persistence =====
 function saveSession() {
+  const scoreVals = Object.values(App.scores).filter(n => typeof n === 'number');
+  let nextReview = null;
+  if (scoreVals.length) {
+    const avg = scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length;
+    const days = avg >= 80 ? 3 : avg >= 60 ? 1 : 0;
+    nextReview = Date.now() + days * 86400000;
+  }
   Store.saveSession({
     v: 1,
     lang: App.lang,
@@ -205,6 +216,7 @@ function saveSession() {
     scene: App.scene,
     tag: App.tag || '',
     created_ts: App.sessionCreatedTs || Date.now(),
+    nextReview,
     ts: Date.now()
   });
 }
@@ -474,10 +486,14 @@ function startReviewMode() {
 
 // ===== 翌日復習判定 =====
 function _isReviewDay() {
+  // スコアベースのnextReviewを優先チェック
+  const s = Store.loadSession();
+  if (s && s.nextReview && s.nextReview <= Date.now() && Object.values(App.scores).some(v => v !== undefined)) return true;
+  // フォールバック: 日付ベース
   if (!App.sessionCreatedTs) return false;
   const createdDate = new Date(App.sessionCreatedTs).toDateString();
   const today = new Date().toDateString();
-  return createdDate !== today && Object.values(App.scores).some(s => s !== undefined);
+  return createdDate !== today && Object.values(App.scores).some(v => v !== undefined);
 }
 
 function _getReviewParaIndices() {
@@ -830,6 +846,115 @@ function playMyVoice() { VoiceRecorder.play(); }
 
 // ===== 3ステップ練習サイクル（Pimsleur: 通常→ゆっくり→録音）=====
 let _cycleActive = false;
+
+// ===== シャドーイング練習 =====
+let _shadowActive = false;
+let _shadowRecognizer = null;
+
+function startShadowing() {
+  if (_shadowActive) { stopShadowing(); return; }
+  if (!localStorage.getItem('sc_shadow_warned')) {
+    $('shadow-modal').classList.add('visible');
+    return;
+  }
+  _doStartShadowing();
+}
+
+function shadowModalConfirm() {
+  localStorage.setItem('sc_shadow_warned', '1');
+  $('shadow-modal').classList.remove('visible');
+  _doStartShadowing();
+}
+
+function closeShadowModal() {
+  $('shadow-modal').classList.remove('visible');
+}
+
+function _doStartShadowing() {
+  if (!Speech.supported()) {
+    alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.'));
+    return;
+  }
+  const step = currentStep();
+  if (!step || step.type !== 'chunk') return;
+  const text = App.paragraphs[step.p].chunks[step.c];
+
+  stopAllAudio();
+  _shadowActive = true;
+
+  const btn = $('shadow-btn');
+  if (btn) { btn.classList.add('active'); $('shadow-label').textContent = u('⏸ 停止', '⏸ Stop'); }
+
+  $('result-area').classList.remove('visible');
+  $('result-text').innerHTML = '';
+  $('chunk-result-legend').style.display = 'none';
+  $('result-label-text').textContent = u('シャドーイング結果', 'Shadowing Result');
+
+  // TTS再生開始
+  Speech.speak(text, App.lang, 1.0, () => {
+    // TTS終了後1.5秒待ってSTT停止（後続発話を拾うため）
+    if (_shadowActive) setTimeout(() => { if (_shadowActive && _shadowRecognizer) _shadowRecognizer.stop(); }, 1500);
+  });
+
+  // 0.5秒後にSTT開始（ユーザーが最初の数語を聞いてから発話するタイミング）
+  setTimeout(() => {
+    if (!_shadowActive) return;
+    _shadowRecognizer = Speech.createRecognizer({
+      lang: App.lang,
+      continuous: true,
+      onInterim: (t) => {
+        $('result-text').textContent = '"' + t + '"';
+        $('chunk-result-legend').style.display = 'none';
+        $('result-area').classList.add('visible');
+      },
+      onEnd: (transcript) => {
+        _shadowActive = false;
+        _shadowRecognizer = null;
+        const b = $('shadow-btn');
+        if (b) { b.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
+        $('result-label-text').textContent = u('あなたの発音（認識結果）', 'Your speech (recognized)');
+        if (transcript) {
+          const score = Score.calc(text, transcript, App.lang);
+          $('result-text').innerHTML = Score.highlight(text, transcript, App.lang);
+          $('chunk-result-legend').style.display = '';
+          $('result-area').classList.add('visible');
+          showChunkScore(score);
+          const key = stepKey(step);
+          if (App.scores[key] === undefined || score > App.scores[key]) {
+            App.scores[key] = score;
+            saveSession();
+            updatePracticeProgress();
+            updateCompletionBanner();
+          }
+        } else {
+          $('result-text').textContent = u('音声が認識されませんでした。イヤホンを使用しているか確認してください。', 'No speech detected. Please check your earphones.');
+          $('result-area').classList.add('visible');
+        }
+      },
+      onError: (err) => {
+        _shadowActive = false;
+        _shadowRecognizer = null;
+        const b = $('shadow-btn');
+        if (b) { b.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
+        $('result-label-text').textContent = u('あなたの発音（認識結果）', 'Your speech (recognized)');
+        if (err === 'no-speech') {
+          $('result-text').textContent = u('音声が検出されませんでした', 'No speech detected');
+          $('result-area').classList.add('visible');
+        }
+      }
+    });
+    _shadowRecognizer.start();
+  }, 500);
+}
+
+function stopShadowing() {
+  _shadowActive = false;
+  Speech.stop();
+  if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
+  const b = $('shadow-btn');
+  if (b) { b.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
+  $('result-label-text').textContent = u('あなたの発音（認識結果）', 'Your speech (recognized)');
+}
 
 // ===== バックチェイニング練習（Pimsleur: 末尾から積み上げ）=====
 let _bcActive = false;
