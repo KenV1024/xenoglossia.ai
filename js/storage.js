@@ -44,7 +44,7 @@ const Store = {
   saveHistory(entry) {
     const h = this.loadHistory();
     h.push(entry);
-    try { localStorage.setItem(this.KEY_HISTORY, JSON.stringify(h.slice(-90))); } catch(e) {}
+    try { localStorage.setItem(this.KEY_HISTORY, JSON.stringify(h.slice(-365))); } catch(e) {}
   },
   loadHistory() {
     try {

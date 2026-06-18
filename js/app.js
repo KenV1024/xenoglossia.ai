@@ -1624,10 +1624,26 @@ function showHistory() {
     $('history-empty').style.display = 'none';
     $('history-chart-wrap').style.display = 'block';
     _renderHistoryStats(hist);
+    _renderHistoryStorageInfo(hist);
     _renderHistoryChart(hist);
     _renderHistoryLog(hist);
   }
   showScreen('history');
+}
+
+function _renderHistoryStorageInfo(hist) {
+  const used = hist.length;
+  const max = 365;
+  const pct = Math.round((used / max) * 100);
+  const el = $('history-storage-info');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="storage-info-row">
+      <span class="storage-info-label">📦 履歴: <strong>${used} / ${max}件</strong>（残り${max - used}件）</span>
+      <span class="storage-info-note">このブラウザのみに保存されます。ブラウザデータを削除すると履歴も消えます。</span>
+    </div>
+    <div class="storage-bar-wrap"><div class="storage-bar-fill" style="width:${pct}%"></div></div>
+  `;
 }
 
 function _calcStreak(hist) {
@@ -1660,8 +1676,9 @@ function _renderHistoryChart(hist) {
     const d = new Date(ts);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   };
+  const DAYS = 30;
   const days = [];
-  for (let i = 13; i >= 0; i--) {
+  for (let i = DAYS - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     days.push({ key: toKey(d.getTime()), label: `${d.getMonth()+1}/${d.getDate()}`, entries: [] });
   }
@@ -1671,7 +1688,8 @@ function _renderHistoryChart(hist) {
   });
 
   const maxChunks = Math.max(1, ...days.map(d => d.entries.reduce((a, e) => a + e.doneSteps, 0)));
-  const barW = 36, gap = 4, padL = 4, H = 120;
+  const barW = 16, gap = 2, padL = 4, H = 120;
+  const svgW = padL * 2 + DAYS * (barW + gap) - gap;
 
   let svgBars = '';
   days.forEach((day, i) => {
@@ -1681,12 +1699,15 @@ function _renderHistoryChart(hist) {
     const bh = chunks ? Math.max(6, Math.round((chunks / maxChunks) * (H - 20))) : 0;
     const x = padL + i * (barW + gap);
     const color = chunks === 0 ? '#E2E8F0' : avg >= 70 ? '#10B981' : avg >= 50 ? '#F59E0B' : '#EF4444';
-    svgBars += `<rect x="${x}" y="${H - bh}" width="${barW}" height="${bh}" rx="4" fill="${color}"/>`;
-    if (chunks > 0) svgBars += `<text x="${x + barW/2}" y="${H - bh - 4}" text-anchor="middle" font-size="9" fill="#64748B">${chunks}</text>`;
+    svgBars += `<rect x="${x}" y="${H - bh}" width="${barW}" height="${bh}" rx="3" fill="${color}"/>`;
+    if (chunks > 0) svgBars += `<text x="${x + barW/2}" y="${H - bh - 4}" text-anchor="middle" font-size="8" fill="#64748B">${chunks}</text>`;
   });
-  $('history-chart').innerHTML = svgBars;
+  const svgEl = $('history-chart');
+  svgEl.setAttribute('viewBox', `0 0 ${svgW} 120`);
+  svgEl.innerHTML = svgBars;
+  // 日付ラベルは5日おきに表示（30日分は全表示すると詰まる）
   $('history-chart-dates').innerHTML = days.map((d, i) =>
-    `<span class="date-cell${i === 13 ? ' today' : ''}">${d.label}</span>`
+    `<span class="date-cell${i === DAYS - 1 ? ' today' : ''}" style="width:${(100/DAYS).toFixed(2)}%">${(i % 5 === 0 || i === DAYS - 1) ? d.label : ''}</span>`
   ).join('');
 }
 
