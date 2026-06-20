@@ -870,6 +870,13 @@ function closeShadowModal() {
   $('shadow-modal').classList.remove('visible');
 }
 
+function showMicBlockedModal() {
+  $('mic-blocked-modal').classList.add('visible');
+}
+function closeMicBlockedModal() {
+  $('mic-blocked-modal').classList.remove('visible');
+}
+
 function _doStartShadowing() {
   if (!Speech.supported()) {
     alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.'));
@@ -1226,7 +1233,7 @@ function startChunkRecording() {
         $('result-text').textContent = u('音声が検出されませんでした。もう一度お試しください。', 'No speech detected. Please try again.');
         $('result-area').classList.add('visible');
       } else if (err === 'not-allowed') {
-        alert('マイクへのアクセスが拒否されています。ブラウザのマイク許可を確認してください。');
+        showMicBlockedModal();
       }
     },
     onEnd: () => { setRecordUI(false); }
@@ -1340,7 +1347,7 @@ function startRunRecording() {
     onInterim: (t) => { $('run-interim').textContent = t; },
     onError: (err) => {
       if (err === 'not-allowed') {
-        alert('マイクへのアクセスが拒否されています。');
+        showMicBlockedModal();
         setRunRecordUI(false);
       }
     },
@@ -1648,7 +1655,7 @@ function rpStartRecording() {
         $('rp-result-text').textContent = '音声が検出されませんでした。「🎤 やり直す」を押してください。';
         $('rp-result').classList.add('visible');
       } else if (err === 'not-allowed') {
-        alert('マイクへのアクセスが拒否されています。');
+        showMicBlockedModal();
       }
     }
   });

@@ -31,9 +31,18 @@
     <p>英語・日本語の会話練習アプリ</p>
   </div>
   <div class="header-btns">
-    <button class="icon-btn" onclick="goHome()" title="ホーム">🏠</button>
-    <button class="icon-btn" onclick="showHistory()" title="学習履歴">📊</button>
-    <button class="icon-btn" onclick="openSettings()" title="設定">⚙</button>
+    <button class="icon-btn" onclick="goHome()">
+      <span class="icon-btn-icon">🏠</span>
+      <span class="icon-btn-label">ホーム</span>
+    </button>
+    <button class="icon-btn" onclick="showHistory()">
+      <span class="icon-btn-icon">📊</span>
+      <span class="icon-btn-label">履歴</span>
+    </button>
+    <button class="icon-btn" onclick="openSettings()">
+      <span class="icon-btn-icon">⚙</span>
+      <span class="icon-btn-label">設定</span>
+    </button>
   </div>
 </div>
 
@@ -42,6 +51,45 @@
   <div class="loading-box">
     <div class="spinner"></div>
     <p id="loading-text">処理中...</p>
+  </div>
+</div>
+
+<!-- Mic Blocked Recovery Modal -->
+<div class="modal-overlay" id="mic-blocked-modal">
+  <div class="modal-box">
+    <h3>🎤 マイクへのアクセスが必要です</h3>
+    <p style="font-size:13px;color:#475569;margin:0 0 14px;line-height:1.6;">
+      ブラウザでマイクへのアクセスがブロックされています。<br>以下の手順で許可してください。
+    </p>
+    <div class="mic-blocked-steps">
+      <div class="mic-blocked-section">
+        <div class="mic-blocked-os">🖥 パソコン（Chrome / Edge）</div>
+        <ol class="mic-blocked-list">
+          <li>アドレスバー左端の 🔒 または 🎤 アイコンをクリック</li>
+          <li>「マイク」→「許可する」に変更</li>
+          <li>ページを再読み込み（F5）</li>
+        </ol>
+      </div>
+      <div class="mic-blocked-section">
+        <div class="mic-blocked-os">📱 iPhone（Chrome）</div>
+        <ol class="mic-blocked-list">
+          <li>iPhoneの「設定」アプリを開く</li>
+          <li>「Chrome」→「マイク」をオンにする</li>
+          <li>このページに戻って再読み込み</li>
+        </ol>
+      </div>
+      <div class="mic-blocked-section">
+        <div class="mic-blocked-os">📱 Android（Chrome）</div>
+        <ol class="mic-blocked-list">
+          <li>アドレスバー右の ⋮ → 「サイトの設定」→「マイク」→「許可」</li>
+          <li>ページを再読み込み</li>
+        </ol>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeMicBlockedModal()">閉じる</button>
+      <button class="btn btn-primary" onclick="location.reload()">ページを再読み込み</button>
+    </div>
   </div>
 </div>
 
@@ -90,6 +138,15 @@
       <button onclick="resumeSession()">続きから</button>
     </div>
 
+    <div class="home-card home-card-topics home-card-hero" onclick="showTopics()">
+      <div class="hero-badge">✨ まずはここから！</div>
+      <h2>🗣 自己紹介の練習</h2>
+      <div class="card-desc">30のテーマを順番に練習して、初対面の相手に自分のことを自由に話せるようになります。[ ] の部分を自分の情報に書き換えて保存できます。</div>
+      <div class="btn-hero-start">今すぐ始める →</div>
+    </div>
+
+    <div class="home-section-header">その他の練習メニュー</div>
+
     <div class="home-card">
       <h2>📄 テキストから練習</h2>
       <div class="card-desc">ファイルを読み込むか、テキストを貼り付けて練習を始めます。日本語と英語が混ざった文書からは自動で抽出します。</div>
@@ -131,12 +188,6 @@
       <div class="error-box" id="home-error"></div>
 
       <button class="btn btn-primary" id="start-btn" onclick="startTextPractice()">練習を開始する →</button>
-    </div>
-
-    <div class="home-card home-card-topics" onclick="showTopics()">
-      <h2>🗣 自己紹介の練習</h2>
-      <div class="card-desc">30のテーマを順番に練習して、初対面の相手に自分のことを自由に話せるようになります。プリセット文章を自分用に書き換えて保存できます。</div>
-      <div class="btn-topics-arrow">練習を始める →</div>
     </div>
 
     <div class="home-card">
