@@ -1145,6 +1145,46 @@ textarea::placeholder { color: #94A3B8; }
   justify-content: flex-end;
 }
 
+/* ===== ウェルカムチュートリアルモーダル ===== */
+.welcome-box {
+  max-width: 360px;
+  text-align: center;
+}
+.wl-hero { font-size: 48px; margin-bottom: 8px; }
+.wl-title { font-size: 22px; font-weight: 800; color: #1E293B; margin-bottom: 4px; }
+.wl-sub { font-size: 14px; color: #4F46E5; font-weight: 700; margin-bottom: 12px; }
+.wl-desc {
+  font-size: 13px; color: #475569; line-height: 1.7;
+  margin-bottom: 16px;
+}
+.wl-steps {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+.wl-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 8px;
+}
+.wl-step:last-child { margin-bottom: 0; }
+.wl-step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; flex-shrink: 0;
+  background: #4F46E5; color: white;
+  border-radius: 50%; font-size: 12px; font-weight: 800;
+}
+.wl-step-text { font-size: 13px; color: #1E293B; line-height: 1.5; padding-top: 2px; }
+.wl-note {
+  font-size: 12px; color: #92400E;
+  background: #FFFBEB; border: 1px solid #FDE68A;
+  border-radius: 8px; padding: 8px 12px;
+  margin-bottom: 16px; line-height: 1.6;
+}
+.wl-start-btn { font-size: 17px; padding: 16px; }
+
 /* ===== 練習状態バー ===== */
 .practice-state-bar {
   display: flex;

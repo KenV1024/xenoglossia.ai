@@ -898,6 +898,17 @@ function closeMicBlockedModal() {
   $('mic-blocked-modal').classList.remove('visible');
 }
 
+function closeWelcomeModal() {
+  localStorage.setItem('sc_onboarded', '1');
+  $('welcome-modal').classList.remove('visible');
+}
+
+function _maybeShowWelcome() {
+  if (!localStorage.getItem('sc_onboarded')) {
+    $('welcome-modal').classList.add('visible');
+  }
+}
+
 function _doStartShadowing() {
   if (!Speech.supported()) {
     alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.'));
@@ -1914,6 +1925,8 @@ function init() {
   $('settings-modal').addEventListener('click', (e) => {
     if (e.target === $('settings-modal')) closeSettings();
   });
+
+  _maybeShowWelcome();
 }
 
 init();

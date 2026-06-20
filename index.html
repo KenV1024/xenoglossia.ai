@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#4F46E5">
-  <title>Speaking Coach</title>
+  <title>英語スピーキングコーチ</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
@@ -27,8 +27,8 @@
 <!-- Header -->
 <div class="header">
   <div class="header-titles">
-    <h1>Speaking Coach</h1>
-    <p>英語・日本語の会話練習アプリ</p>
+    <h1>英語スピーキングコーチ</h1>
+    <p>発音練習・チャンク学習・ロールプレイ</p>
   </div>
   <div class="header-btns">
     <button class="icon-btn" onclick="goHome()">
@@ -51,6 +51,38 @@
   <div class="loading-box">
     <div class="spinner"></div>
     <p id="loading-text">処理中...</p>
+  </div>
+</div>
+
+<!-- Welcome / Tutorial Modal（初回のみ表示） -->
+<div class="modal-overlay" id="welcome-modal">
+  <div class="modal-box welcome-box">
+    <div class="wl-hero">🗣</div>
+    <h3 class="wl-title">ようこそ！</h3>
+    <p class="wl-sub">英語スピーキングコーチへ</p>
+    <p class="wl-desc">
+      このアプリで<strong>英語を話す力</strong>を段階的に練習できます。<br>
+      まずは自己紹介の定番フレーズから始めましょう。
+    </p>
+    <div class="wl-steps">
+      <div class="wl-step">
+        <span class="wl-step-num">1</span>
+        <span class="wl-step-text">「自己紹介の練習」からトピックを選ぶ</span>
+      </div>
+      <div class="wl-step">
+        <span class="wl-step-num">2</span>
+        <span class="wl-step-text">▶ を押してAIの発音を聞く</span>
+      </div>
+      <div class="wl-step">
+        <span class="wl-step-num">3</span>
+        <span class="wl-step-text">🎤 で録音して採点を確認する</span>
+      </div>
+    </div>
+    <div class="wl-note">
+      ⚠ 録音機能には<strong>マイクの許可</strong>が必要です。<br>
+      Chrome または Edge でご利用ください。
+    </div>
+    <button class="btn btn-primary wl-start-btn" onclick="closeWelcomeModal()">はじめる →</button>
   </div>
 </div>
 

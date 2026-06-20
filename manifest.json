@@ -1,7 +1,7 @@
 {
-  "name": "Speaking Coach",
-  "short_name": "SpeakCoach",
-  "description": "英語・日本語の発音/会話練習アプリ",
+  "name": "英語スピーキングコーチ",
+  "short_name": "英語コーチ",
+  "description": "発音練習・チャンク学習・AIロールプレイで英語スピーキングを上達させるアプリ",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
