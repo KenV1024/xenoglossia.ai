@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#4F46E5">
-  <title>英語スピーキングコーチ</title>
+  <title>ゼノグノーシア.ai</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
@@ -13,22 +13,23 @@
 
 <!-- Safari / unsupported browser banner -->
 <div id="browser-banner" style="display:none;background:#FEF3C7;border-bottom:1px solid #F59E0B;padding:10px 16px;font-size:13px;line-height:1.5;text-align:center;">
-  ⚠️ このブラウザでは<strong>録音・採点機能が動作しません</strong>。<br>
-  iPhoneの方は <strong>Chrome</strong>（<a href="https://apps.apple.com/jp/app/google-chrome/id535886823" target="_blank" rel="noopener" style="color:#B45309;">App Storeからダウンロード</a>）でお試しください。
+  ⚠️ このブラウザでは<strong>録音・採点機能が正しく動作しません</strong>。<br>
+  <strong>Chrome</strong>（PC・Android）または <strong>Safari</strong>（iPhone）でご利用ください。
   <button onclick="this.parentElement.style.display='none'" style="margin-left:12px;background:none;border:1px solid #B45309;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;color:#B45309;">閉じる</button>
 </div>
 <script>
 (function(){
   const hasSpeech = ('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window);
-  if (!hasSpeech) document.getElementById('browser-banner').style.display = 'block';
+  const isEdge = /Edg\//.test(navigator.userAgent) || /Edge\//.test(navigator.userAgent);
+  if (!hasSpeech || isEdge) document.getElementById('browser-banner').style.display = 'block';
 })();
 </script>
 
 <!-- Header -->
 <div class="header">
   <div class="header-titles">
-    <h1>英語スピーキングコーチ</h1>
-    <p>発音練習・チャンク学習・ロールプレイ</p>
+    <h1>ゼノグノーシア.ai</h1>
+    <p>英語スピーキングコーチ</p>
   </div>
   <div class="header-btns">
     <button class="icon-btn" onclick="goHome()">
@@ -44,6 +45,14 @@
       <span class="icon-btn-label">設定</span>
     </button>
   </div>
+</div>
+
+<!-- Practice Mode Bar（練習画面のみ表示） -->
+<div class="practice-mode-bar" id="practice-mode-bar" style="display:none;">
+  <button class="pm-btn active" id="pm-chunk" onclick="setPracticeMode('chunk')">チャンク</button>
+  <button class="pm-btn" id="pm-3step" onclick="setPracticeMode('3step')">🔄 3ステップ</button>
+  <button class="pm-btn" id="pm-backchain" onclick="setPracticeMode('backchain')">⬅ バック</button>
+  <button class="pm-btn" id="pm-shadow" onclick="setPracticeMode('shadow')">🎧 シャドー</button>
 </div>
 
 <!-- Loading Overlay -->
@@ -80,7 +89,7 @@
     </div>
     <div class="wl-note">
       ⚠ 録音機能には<strong>マイクの許可</strong>が必要です。<br>
-      Chrome または Edge でご利用ください。
+      Chrome（PC・Android）または Safari（iPhone）でご利用ください。
     </div>
     <button class="btn btn-primary wl-start-btn" onclick="closeWelcomeModal()">はじめる →</button>
   </div>
@@ -95,7 +104,7 @@
     </p>
     <div class="mic-blocked-steps">
       <div class="mic-blocked-section">
-        <div class="mic-blocked-os">🖥 パソコン（Chrome / Edge）</div>
+        <div class="mic-blocked-os">🖥 パソコン（Chrome）</div>
         <ol class="mic-blocked-list">
           <li>アドレスバー左端の 🔒 または 🎤 アイコンをクリック</li>
           <li>「マイク」→「許可する」に変更</li>
@@ -122,6 +131,21 @@
       <button class="btn btn-secondary" onclick="closeMicBlockedModal()">閉じる</button>
       <button class="btn btn-primary" onclick="location.reload()">ページを再読み込み</button>
     </div>
+  </div>
+</div>
+
+<!-- Tutorial Overlay -->
+<div id="tut-mask-top" class="tut-mask" style="display:none;top:0;left:0;right:0;"></div>
+<div id="tut-mask-bottom" class="tut-mask" style="display:none;left:0;right:0;bottom:0;"></div>
+<div id="tut-mask-left" class="tut-mask" style="display:none;"></div>
+<div id="tut-mask-right" class="tut-mask" style="display:none;"></div>
+<div id="tut-highlight-box" class="tut-highlight-box" style="display:none;"></div>
+<div id="tut-card" class="tut-card" style="display:none;">
+  <div class="tut-step-num" id="tut-step-num"></div>
+  <div class="tut-text" id="tut-text"></div>
+  <div class="tut-actions">
+    <button class="tut-skip-btn" onclick="Tut.skip()">スキップ</button>
+    <button class="tut-next-btn" id="tut-next-btn" onclick="Tut.next()">次へ →</button>
   </div>
 </div>
 
@@ -179,9 +203,12 @@
 
     <div class="home-section-header">その他の練習メニュー</div>
 
-    <div class="home-card">
+    <div class="home-card" id="text-practice-card">
       <h2>📄 テキストから練習</h2>
       <div class="card-desc">ファイルを読み込むか、テキストを貼り付けて練習を始めます。日本語と英語が混ざった文書からは自動で抽出します。</div>
+      <button class="btn btn-ghost" id="text-expand-btn" onclick="expandTextPractice()">テキストを入力して始める →</button>
+
+      <div id="text-practice-expanded" style="display:none;">
 
       <div class="dropzone" id="dropzone">
         <div class="dz-icon">📂</div>
@@ -220,6 +247,8 @@
       <div class="error-box" id="home-error"></div>
 
       <button class="btn btn-primary" id="start-btn" onclick="startTextPractice()">練習を開始する →</button>
+
+      </div><!-- /text-practice-expanded -->
     </div>
 
     <div class="home-card">
@@ -277,7 +306,7 @@
 <div class="screen" id="screen-practice">
   <div class="container">
     <div class="practice-top">
-      <button class="back-btn" id="practice-back-btn" onclick="showScreen('list')">← 一覧</button>
+      <button class="back-btn" id="practice-back-btn" onclick="showScreen('list')">← チャンク一覧へ</button>
       <span class="chunk-counter" id="chunk-counter"></span>
     </div>
 
@@ -432,7 +461,7 @@
 <div class="screen" id="screen-run">
   <div class="container">
     <div class="practice-top">
-      <button class="back-btn" id="run-back-btn" onclick="showScreen('list')">← 一覧</button>
+      <button class="back-btn" id="run-back-btn" onclick="showScreen('list')">← 練習一覧へ</button>
       <span class="chunk-counter">
         <span id="run-title">通し練習</span>
         <span class="best-score-tag" id="run-best-tag"></span>
@@ -628,7 +657,7 @@
     <div id="topic-detail-view" style="display:none;">
       <div class="list-top">
         <h2 id="td-num">トピック 1 / 30</h2>
-        <button onclick="topicBackToList()">← 一覧</button>
+        <button onclick="topicBackToList()">← トピック一覧へ</button>
       </div>
 
       <div class="topic-detail-card">
@@ -639,20 +668,13 @@
           💾 カスタム保存済み（ブラウザのデータを消すと消えます）
         </div>
 
-        <!-- テキスト表示 -->
-        <div id="td-text-wrap">
-          <div class="td-hint">[ ] の部分を自分の情報に書き換えて練習しましょう</div>
-          <div class="td-text" id="td-text"></div>
-          <button class="td-edit-btn" onclick="topicStartEdit()">✏ 自分の文章に書き換える</button>
-        </div>
-
-        <!-- 編集エリア -->
-        <div id="td-edit-wrap" style="display:none;">
+        <!-- 編集エリア（常時表示） -->
+        <div id="td-edit-wrap">
+          <div class="td-hint">[ ] の部分を自分の情報に書き換えて保存しましょう</div>
           <textarea class="td-textarea" id="td-textarea" rows="5" placeholder="自分の内容に書き換えてください..."></textarea>
           <div class="td-edit-actions">
             <button class="btn btn-secondary" style="width:auto;padding:10px 14px;" onclick="topicResetPreset()">元に戻す</button>
-            <button class="btn btn-secondary" style="width:auto;padding:10px 14px;" onclick="topicCancelEdit()">キャンセル</button>
-            <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="topicSave()">💾 保存する</button>
+            <button class="btn btn-primary" style="width:auto;padding:10px 20px;" id="topic-save-btn" onclick="topicSave()">💾 保存する</button>
           </div>
         </div>
 

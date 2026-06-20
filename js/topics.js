@@ -180,7 +180,7 @@ function showTopicDetail(id) {
   $('td-num').textContent   = `トピック ${id} / 30`;
   $('td-title').textContent = t.title;
   $('td-desc').textContent  = t.desc;
-  $('td-text').textContent  = text;
+  $('td-textarea').value = text;
 
   const savedBadge = $('td-saved-badge');
   savedBadge.style.display = custom ? 'block' : 'none';
@@ -193,9 +193,6 @@ function showTopicDetail(id) {
     scoreEl.style.display = 'none';
   }
 
-  $('td-edit-wrap').style.display  = 'none';
-  $('td-text-wrap').style.display  = 'block';
-
   $('topic-list-view').style.display   = 'none';
   $('topic-detail-view').style.display = 'block';
 }
@@ -203,27 +200,26 @@ function showTopicDetail(id) {
 function topicBackToList() {
   $('topic-list-view').style.display   = 'block';
   $('topic-detail-view').style.display = 'none';
+  // 未保存の変更があれば確認（任意：空なら戻る）
 }
 
 function topicStartEdit() {
   const t = TOPICS.find(x => x.id === _topicDetailId);
   $('td-textarea').value = TopicStore.getCustom(_topicDetailId) || t.preset;
-  $('td-text-wrap').style.display = 'none';
-  $('td-edit-wrap').style.display = 'block';
-}
-
-function topicCancelEdit() {
-  $('td-edit-wrap').style.display = 'none';
-  $('td-text-wrap').style.display = 'block';
 }
 
 function topicSave() {
   const text = $('td-textarea').value.trim();
   if (!text) return;
   TopicStore.setCustom(_topicDetailId, text);
-  $('td-text').textContent = text;
   $('td-saved-badge').style.display = 'block';
-  topicCancelEdit();
+  // 保存完了フィードバック
+  const btn = $('topic-save-btn');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 保存しました';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  }
 }
 
 function topicResetPreset() {

@@ -91,6 +91,36 @@ function setPracticeState(state) {
   }
 }
 
+// ===== Practice Mode (header selector) =====
+let _practiceMode = 'chunk';
+
+function setPracticeMode(mode) {
+  if (_practiceMode === mode) return;
+  stopAllAudio();
+  _practiceMode = mode;
+
+  document.querySelectorAll('.pm-btn').forEach(b => b.classList.remove('active'));
+  const btn = $('pm-' + mode);
+  if (btn) btn.classList.add('active');
+
+  const sp = $('screen-practice');
+  if (sp) sp.dataset.mode = mode;
+
+  const modeLabels = {
+    chunk: ['チャンク練習', 'tag-chunk'],
+    '3step': ['3ステップ練習', 'tag-chunk'],
+    backchain: ['バックチェイニング練習', 'tag-para'],
+    shadow: ['シャドーイング練習', 'tag-full']
+  };
+  const [label, cls] = modeLabels[mode] || modeLabels.chunk;
+  const tag = $('practice-tag');
+  if (tag) { tag.textContent = label; tag.className = 'step-tag ' + cls; }
+
+  if (mode === 'backchain') startBackchain();
+  else if (mode === 'shadow') startShadowing();
+  else if (mode === '3step') playCycle();
+}
+
 function stopAllAudio() {
   Speech.stop();
   _speakScreen = null;
@@ -186,6 +216,18 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $('screen-' + name).classList.add('active');
   if (name === 'list') updateListUI();
+  // Practice mode bar: show only on practice screen
+  const pmBar = $('practice-mode-bar');
+  if (pmBar) pmBar.style.display = name === 'practice' ? 'flex' : 'none';
+  // Reset practice mode when entering practice screen
+  if (name === 'practice') {
+    _practiceMode = 'chunk';
+    const sp = $('screen-practice');
+    if (sp) sp.dataset.mode = 'chunk';
+    document.querySelectorAll('.pm-btn').forEach(b => b.classList.remove('active'));
+    const pm = $('pm-chunk');
+    if (pm) pm.classList.add('active');
+  }
 }
 
 function goHome() {
@@ -905,15 +947,163 @@ function closeWelcomeModal() {
 
 function _maybeShowWelcome() {
   if (!localStorage.getItem('sc_onboarded')) {
-    $('welcome-modal').classList.add('visible');
+    // チュートリアルが新実装のため、旧welcome-modalは非表示
+    setTimeout(() => Tut.start(), 300);
   }
 }
 
+// ===== チュートリアルエンジン =====
+const TUT_STEPS = [
+  // 0: ウェルカム
+  { text: 'ゼノグノーシア.ai へようこそ！\n英語スピーキングを段階的に練習できるアプリです。\n基本の使い方を一緒に確認しましょう。', action: 'next', nextLabel: 'はじめる →' },
+  // 1: 今すぐ始めるボタン
+  { targetSel: '.home-card-hero .btn-hero-start', text: '「自己紹介の練習」から始めましょう。\n「今すぐ始める」ボタンを押してください。', action: 'click', screen: 'home' },
+  // 2: 最初のトピック（名前・出身地）
+  { targetSel: '.topic-item:first-child', text: 'トピックの一覧が表示されました。\nまず「名前・出身地」を押してみましょう。', action: 'click', screen: 'topics' },
+  // 3: テキスト編集説明
+  { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\nたとえば [Your Name] を自分の名前に変えてみましょう。', action: 'next', screen: 'topics' },
+  // 4: 保存ボタン
+  { targetSel: '#topic-save-btn', text: '書き換えたら「保存する」を押してください。\n次回からも保存した文章で練習できます。', action: 'click', screen: 'topics' },
+  // 5: 練習するボタン
+  { targetSel: '.topic-detail-card .btn.btn-primary', text: '「このトピックを練習する」を押して、練習画面へ進みましょう。', action: 'click', screen: 'topics' },
+  // 6: 使い方ヒント（リスト画面）
+  { text: '使い方のヒント\n\n✓ チャンク練習 → パラグラフ通し → 全文通し、の順に階段式で練習できます\n✓ まず「ゆっくり再生」で音を確認し、真似して話しましょう\n✓ 録音すると採点され、自分の声の聞き返しもできます\n✓ ゴールは30分のネイティブ会話！', action: 'next', screen: 'list' },
+  // 7: チャンクカード①
+  { targetSel: '.chunk-card:first-child', text: '① のカードが「チャンク練習」です。\n文を小さなかたまりに分けて練習します。', action: 'next', screen: 'list' },
+  // 8: パラグラフ通しボタン
+  { targetSel: '.para-run-btn', text: 'このボタンでパラグラフ全体をまとめて練習できます。', action: 'next', screen: 'list' },
+  // 9: 全文通しボタン
+  { targetSel: '#full-mode-btn', text: '全文を通して練習するボタンもあります。\nまずはチャンク①から始めましょう。', action: 'next', screen: 'list' },
+  // 10: チャンク①を押す
+  { targetSel: '.chunk-card:first-child', text: '①のチャンクを押して練習を始めましょう！', action: 'click', screen: 'list' },
+  // 11: 再生ボタン
+  { targetSel: '.btn-play', text: '「再生」を押してAIの発音を聞いてみましょう。', action: 'click', screen: 'practice' },
+  // 12: ゆっくりボタン
+  { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice' },
+  // 13: 録音ボタン
+  { targetSel: '.btn-record', text: '「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。', action: 'click', screen: 'practice' },
+  // 14: 発音結果エリア
+  { targetSel: '#result-area', text: '発音が認識されてスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。', action: 'next', screen: 'practice' },
+  // 15: 自分の声ボタン
+  { targetSel: '#myvoice-btn', text: '「自分の声」ボタンで録音を聞き返せます。\n自分の発音を客観的に確認しましょう。', action: 'next', screen: 'practice' },
+  // 16: 発音ガイドボタン
+  { targetSel: '#guide-toggle', text: '「発音ガイド」をONにすると、強調する音やリンキングのコツが表示されます。', action: 'next', screen: 'practice' },
+  // 17: 次へボタン
+  { targetSel: '#next-btn', text: '「次へ」で次のチャンクに進みます。\nチャンク→パラグラフ→全文の順に進んでいきます。', action: 'next', screen: 'practice' },
+  // 18: ナビ説明
+  { targetSel: '#practice-back-btn', text: '「チャンク一覧へ」でチャンク一覧に戻れます。\nヘッダーの「🏠 ホーム」でトップページに戻れます。', action: 'next', screen: 'practice' },
+  // 19: 完了
+  { text: 'チュートリアル完了です！🎉\nあとは自由に練習してみましょう。\nゴールは30分のネイティブ会話。ゼノグノーシア.aiが一緒に応援します！', action: 'next', nextLabel: '練習を始める！', screen: 'practice' }
+];
+
+const Tut = {
+  idx: 0,
+  active: false,
+  _prevClickTarget: null,
+  _prevHandler: null,
+
+  start() {
+    this.idx = 0;
+    this.active = true;
+    this._render();
+  },
+
+  next() {
+    this._cleanup();
+    this.idx++;
+    if (this.idx >= TUT_STEPS.length) { this.finish(); return; }
+    this._render();
+  },
+
+  skip() { this.finish(); },
+
+  finish() {
+    this.active = false;
+    localStorage.setItem('sc_onboarded', '1');
+    this._cleanup();
+    this._hideSpotlight();
+    $('tut-card').style.display = 'none';
+  },
+
+  _render() {
+    const step = TUT_STEPS[this.idx];
+    $('tut-step-num').textContent = `ステップ ${this.idx + 1} / ${TUT_STEPS.length}`;
+    $('tut-text').textContent = step.text;
+    $('tut-card').style.display = 'block';
+    const nextBtn = $('tut-next-btn');
+    nextBtn.textContent = step.nextLabel || '次へ →';
+    nextBtn.style.display = step.action === 'next' ? 'block' : 'none';
+
+    if (step.targetSel) {
+      const el = document.querySelector(step.targetSel);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => this._spotlight(el), 350);
+        if (step.action === 'click') {
+          const handler = (e) => {
+            el.removeEventListener('click', handler, true);
+            this._prevClickTarget = null;
+            this._prevHandler = null;
+            setTimeout(() => this.next(), 500);
+          };
+          el.addEventListener('click', handler, true);
+          this._prevClickTarget = el;
+          this._prevHandler = handler;
+        }
+      } else {
+        this._hideSpotlight();
+      }
+    } else {
+      this._hideSpotlight();
+    }
+  },
+
+  _spotlight(el) {
+    const r = el.getBoundingClientRect();
+    const p = 8;
+    const cardH = 180; // approximate tut-card height
+    const safeBottom = window.innerHeight - cardH - 16;
+
+    const top = Math.max(0, r.top - p);
+    const bottom = Math.min(safeBottom, r.bottom + p);
+    const left = Math.max(0, r.left - p);
+    const right = Math.min(window.innerWidth, r.right + p);
+
+    const st = (id, css) => { const el = $(id); if(el) Object.assign(el.style, css); };
+
+    st('tut-mask-top',    { display:'block', top:'0', left:'0', right:'0', height: top + 'px' });
+    st('tut-mask-bottom', { display:'block', top: bottom + 'px', left:'0', right:'0', bottom:'0', height:'' });
+    st('tut-mask-left',   { display:'block', top: top+'px', left:'0', width: left+'px', height: (bottom-top)+'px', bottom:'' });
+    st('tut-mask-right',  { display:'block', top: top+'px', left: right+'px', right:'0', width:'', height: (bottom-top)+'px', bottom:'' });
+
+    const hb = $('tut-highlight-box');
+    if (hb) Object.assign(hb.style, {
+      display: 'block',
+      top: top + 'px', left: left + 'px',
+      width: (right - left) + 'px', height: (bottom - top) + 'px'
+    });
+  },
+
+  _hideSpotlight() {
+    ['tut-mask-top','tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box']
+      .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
+  },
+
+  _cleanup() {
+    if (this._prevClickTarget && this._prevHandler) {
+      this._prevClickTarget.removeEventListener('click', this._prevHandler, true);
+      this._prevClickTarget = null;
+      this._prevHandler = null;
+    }
+  }
+};
+
 function _doStartShadowing() {
   if (!Speech.supported()) {
-    alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.'));
+    alert(u('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。', 'Speech recognition requires Chrome or Safari.'));
     return;
   }
+  $('screen-practice').classList.add('shadowing-active');
   const step = currentStep();
   if (!step || step.type !== 'chunk') return;
   const text = App.paragraphs[step.p].chunks[step.c];
@@ -993,6 +1183,7 @@ function stopShadowing() {
   const b = $('shadow-btn');
   if (b) { b.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
   $('result-label-text').textContent = u('あなたの発音（認識結果）', 'Your speech (recognized)');
+  $('screen-practice').classList.remove('shadowing-active');
 }
 
 // ===== バックチェイニング練習（Pimsleur: 末尾から積み上げ）=====
@@ -1009,7 +1200,7 @@ function setBcAdvance(mode) {
 
 function playCycle() {
   if (_cycleActive) { stopAllAudio(); return; }
-  if (!Speech.supported()) { alert('音声認識はChrome / Edgeでご利用ください。'); return; }
+  if (!Speech.supported()) { alert('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。'); return; }
 
   _cycleActive = true;
   const btn = $('cycle-btn');
@@ -1123,7 +1314,7 @@ function bcPlay() {
 }
 
 function bcRecord() {
-  if (!Speech.supported()) { alert(u('音声認識はChrome / Edgeでご利用ください。', 'Speech recognition requires Chrome or Edge.')); return; }
+  if (!Speech.supported()) { alert(u('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。', 'Speech recognition requires Chrome or Safari.')); return; }
   if (!_bcActive) return;
   if (_bcRecognizer) {
     _bcRecognizer.abort(); _bcRecognizer = null;
@@ -1238,7 +1429,7 @@ function toggleRecord() {
 
 function startChunkRecording() {
   if (!Speech.supported()) {
-    alert('音声認識はChrome / Edgeでご利用ください。');
+    alert('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。');
     return;
   }
   const step = currentStep();
@@ -1387,7 +1578,7 @@ function toggleRunRecord() {
 
 function startRunRecording() {
   if (!Speech.supported()) {
-    alert('音声認識はChrome / Edgeでご利用ください。');
+    alert('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。');
     return;
   }
   Speech.stop();
@@ -1681,7 +1872,7 @@ function rpStep() {
 }
 
 function rpStartRecording() {
-  if (!Speech.supported()) { alert('音声認識はChrome / Edgeでご利用ください。'); return; }
+  if (!Speech.supported()) { alert('音声認識はChrome（PC・Android）またはSafari（iPhone）でご利用ください。'); return; }
   if (rp.idx >= App.scene.turns.length || !rpIsMyTurn()) return;
   const turn = rpCurrentTurn();
 
@@ -1913,6 +2104,24 @@ function _renderHistoryLog(hist) {
 }
 
 
+// ===== テキスト練習カード展開 =====
+function expandTextPractice() {
+  $('text-practice-expanded').style.display = 'block';
+  $('text-expand-btn').style.display = 'none';
+}
+
+// ===== ブラウザバック検知 =====
+function setupBrowserBackGuard() {
+  history.pushState({ xeno: true }, '');
+  window.addEventListener('popstate', () => {
+    if (confirm('アプリから別のページに移動しますか？\n（OKで移動、キャンセルでアプリに留まります）')) {
+      history.back();
+    } else {
+      history.pushState({ xeno: true }, '');
+    }
+  });
+}
+
 // ===== Init =====
 function init() {
   Speech.init();
@@ -1927,6 +2136,7 @@ function init() {
   });
 
   _maybeShowWelcome();
+  setupBrowserBackGuard();
 }
 
 init();

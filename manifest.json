@@ -1,7 +1,7 @@
 {
-  "name": "英語スピーキングコーチ",
-  "short_name": "英語コーチ",
-  "description": "発音練習・チャンク学習・AIロールプレイで英語スピーキングを上達させるアプリ",
+  "name": "ゼノグノーシア.ai",
+  "short_name": "ゼノグノーシア",
+  "description": "英語スピーキングコーチ。チャンク練習・3ステップ練習・シャドーイングで英語を話す力を伸ばすアプリ",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

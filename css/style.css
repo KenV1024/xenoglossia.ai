@@ -1269,3 +1269,109 @@ textarea::placeholder { color: #94A3B8; }
   font-size: 12px; color: #475569;
   line-height: 1.7;
 }
+
+/* ===== 練習モードバー（ヘッダー直下） ===== */
+.practice-mode-bar {
+  background: linear-gradient(135deg, #3730A3, #6D28D9);
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 10px;
+}
+.pm-btn {
+  flex: 1;
+  padding: 6px 2px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: rgba(255,255,255,0.75);
+  border-radius: 8px;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.pm-btn.active { background: white; color: #4F46E5; }
+.pm-btn:hover:not(.active) { background: rgba(255,255,255,0.25); color: white; }
+
+/* ===== 練習モード別UI切替 ===== */
+/* chunk モード: cycle/backchain/shadow/bc-panel を非表示 */
+#screen-practice[data-mode="chunk"] .btn-cycle,
+#screen-practice[data-mode="chunk"] .btn-backchain,
+#screen-practice[data-mode="chunk"] .btn-shadow,
+#screen-practice[data-mode="chunk"] .bc-panel { display: none !important; }
+
+/* 3step モード: action-buttons/backchain/shadow/bc-panel を非表示 */
+#screen-practice[data-mode="3step"] .action-buttons,
+#screen-practice[data-mode="3step"] .btn-backchain,
+#screen-practice[data-mode="3step"] .btn-shadow,
+#screen-practice[data-mode="3step"] .bc-panel { display: none !important; }
+
+/* backchain モード: action-buttons/cycle/shadow/result/rec-indicator/silence-hint を非表示 */
+#screen-practice[data-mode="backchain"] .action-buttons,
+#screen-practice[data-mode="backchain"] .btn-cycle,
+#screen-practice[data-mode="backchain"] .btn-shadow,
+#screen-practice[data-mode="backchain"] .result-area,
+#screen-practice[data-mode="backchain"] .rec-indicator,
+#screen-practice[data-mode="backchain"] .silence-hint { display: none !important; }
+
+/* shadow モード: action-buttons/cycle/backchain/bc-panel/rec-indicator/silence-hint を非表示 */
+#screen-practice[data-mode="shadow"] .action-buttons,
+#screen-practice[data-mode="shadow"] .btn-cycle,
+#screen-practice[data-mode="shadow"] .btn-backchain,
+#screen-practice[data-mode="shadow"] .bc-panel,
+#screen-practice[data-mode="shadow"] .rec-indicator,
+#screen-practice[data-mode="shadow"] .silence-hint { display: none !important; }
+
+/* シャドーイング中: テキストを大きく中央揃え */
+#screen-practice.shadowing-active .chunk-display { text-align: center; }
+#screen-practice.shadowing-active .english-text { font-size: 26px; }
+
+/* ===== テキスト練習カード折り畳み ===== */
+#text-practice-expanded { padding-top: 14px; }
+
+/* ===== チュートリアルオーバーレイ ===== */
+.tut-mask {
+  position: fixed;
+  background: rgba(0,0,0,0.68);
+  z-index: 3000;
+  pointer-events: auto;
+}
+.tut-highlight-box {
+  position: fixed;
+  z-index: 3001;
+  pointer-events: none;
+  border: 3px solid #F59E0B;
+  border-radius: 12px;
+  box-shadow: 0 0 0 4px rgba(245,158,11,0.3);
+  animation: tut-glow 1.5s infinite;
+}
+@keyframes tut-glow {
+  0%,100% { box-shadow: 0 0 0 4px rgba(245,158,11,0.3); }
+  50% { box-shadow: 0 0 0 10px rgba(245,158,11,0.5); }
+}
+.tut-card {
+  position: fixed;
+  bottom: 24px; left: 16px; right: 16px;
+  background: white; border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 3002;
+}
+.tut-step-num {
+  font-size: 11px; color: #94A3B8; font-weight: 700;
+  letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.tut-text {
+  font-size: 14px; line-height: 1.75; color: #1E293B;
+  margin-bottom: 16px; white-space: pre-line;
+}
+.tut-actions { display: flex; justify-content: space-between; align-items: center; }
+.tut-skip-btn {
+  background: none; border: none; color: #94A3B8;
+  font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.tut-next-btn {
+  background: #4F46E5; color: white;
+  border: none; border-radius: 10px;
+  padding: 10px 22px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
