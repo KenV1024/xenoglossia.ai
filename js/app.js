@@ -1002,12 +1002,20 @@ const Tut = {
   _prevClickTarget: null,
   _prevHandler: null,
   _currentEl: null,
+  _wheelHandler: null,
   _resizeHandler: null,
 
   start() {
     this.idx = 0;
     this.active = true;
     this._currentEl = null;
+
+    // ホイール・タッチスクロールを完全ブロック（passive:false 必須）
+    this._wheelHandler = (e) => { e.preventDefault(); };
+    window.addEventListener('wheel',     this._wheelHandler, { passive: false });
+    window.addEventListener('touchmove', this._wheelHandler, { passive: false });
+
+    // リサイズ時にスポットライトを再計算
     this._resizeHandler = () => {
       if (this.active && this._currentEl) {
         const step = TUT_STEPS[this.idx];
@@ -1015,6 +1023,7 @@ const Tut = {
       }
     };
     window.addEventListener('resize', this._resizeHandler);
+
     this._render();
   },
 
@@ -1033,7 +1042,22 @@ const Tut = {
     this._cleanup();
     this._hideAllOverlays();
     $('tut-card').style.display = 'none';
+    this._unlockScroll();
+  },
+
+  _lockScroll() {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  },
+
+  _unlockScroll() {
     document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    if (this._wheelHandler) {
+      window.removeEventListener('wheel',     this._wheelHandler);
+      window.removeEventListener('touchmove', this._wheelHandler);
+      this._wheelHandler = null;
+    }
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler);
       this._resizeHandler = null;
@@ -1054,11 +1078,12 @@ const Tut = {
       const el = document.querySelector(step.targetSel);
       if (el) {
         this._currentEl = el;
-        // スクロールを一時解除してinstantでスクロール → 座標確定後にロック
+        // overflow を一瞬解除して instant スクロール → RAF後に再ロック
         document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
         el.scrollIntoView({ behavior: 'instant', block: 'center' });
         requestAnimationFrame(() => {
-          document.documentElement.style.overflow = 'hidden';
+          this._lockScroll();
           this._spotlight(el, step.action === 'click');
         });
         if (step.action === 'click') {
@@ -1066,8 +1091,18 @@ const Tut = {
             el.removeEventListener('click', handler, true);
             this._prevClickTarget = null;
             this._prevHandler = null;
-            document.documentElement.style.overflow = ''; // 次画面遷移のため解除
-            setTimeout(() => this.next(), 500);
+            // 次画面への遷移を許可するため unlock（wheel ブロックは維持）
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            setTimeout(() => {
+              // 新しいスクリーンでもホイールは引き続きブロック
+              if (!this._wheelHandler) {
+                this._wheelHandler = (e) => { e.preventDefault(); };
+                window.addEventListener('wheel',     this._wheelHandler, { passive: false });
+                window.addEventListener('touchmove', this._wheelHandler, { passive: false });
+              }
+              this.next();
+            }, 500);
           };
           el.addEventListener('click', handler, true);
           this._prevClickTarget = el;
@@ -1082,7 +1117,7 @@ const Tut = {
   },
 
   _setFullScreenMask() {
-    document.documentElement.style.overflow = 'hidden';
+    this._lockScroll();
     const top = $('tut-mask-top');
     if (top) Object.assign(top.style, { display:'block', top:'0', left:'0', right:'0', bottom:'0', height:'' });
     ['tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box'].forEach(id => {
@@ -1100,19 +1135,16 @@ const Tut = {
   _spotlight(el, isClickable) {
     const r = el.getBoundingClientRect();
     const p = 8;
-
     const top    = Math.max(0, r.top - p);
     const bottom = Math.min(window.innerHeight, r.bottom + p);
     const left   = Math.max(0, r.left - p);
     const right  = Math.min(window.innerWidth, r.right + p);
 
     const st = (id, css) => { const e = $(id); if (e) Object.assign(e.style, css); };
-
     st('tut-mask-top',    { display:'block', top:'0', left:'0', right:'0', height: top + 'px', bottom:'' });
     st('tut-mask-bottom', { display:'block', top: bottom + 'px', left:'0', right:'0', bottom:'0', height:'' });
     st('tut-mask-left',   { display:'block', top: top+'px', left:'0', right:'', width: left+'px', height: (bottom-top)+'px', bottom:'' });
     st('tut-mask-right',  { display:'block', top: top+'px', left: right+'px', right:'0', width:'', height: (bottom-top)+'px', bottom:'' });
-
     st('tut-highlight-box', {
       display: 'block',
       top: top + 'px', left: left + 'px',
@@ -1148,14 +1180,12 @@ const Tut = {
           transform: 'none', width: 'auto'
         });
       } else if (spaceAbove >= cardH + 24) {
-        const cardTop = Math.max(60, top - cardH - 16);
         Object.assign(card.style, {
-          top: cardTop + 'px', bottom: 'auto',
+          top: Math.max(60, top - cardH - 16) + 'px', bottom: 'auto',
           left: '16px', right: '16px',
           transform: 'none', width: 'auto'
         });
       } else {
-        // 上下ともスペース不足 → 中央（フォールバック）
         Object.assign(card.style, {
           top: '50%', left: '50%', right: 'auto', bottom: 'auto',
           transform: 'translate(-50%, -50%)', width: 'calc(100% - 32px)'
