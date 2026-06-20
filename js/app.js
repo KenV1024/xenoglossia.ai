@@ -1001,10 +1001,20 @@ const Tut = {
   active: false,
   _prevClickTarget: null,
   _prevHandler: null,
+  _currentEl: null,
+  _resizeHandler: null,
 
   start() {
     this.idx = 0;
     this.active = true;
+    this._currentEl = null;
+    this._resizeHandler = () => {
+      if (this.active && this._currentEl) {
+        const step = TUT_STEPS[this.idx];
+        this._spotlight(this._currentEl, step.action === 'click');
+      }
+    };
+    window.addEventListener('resize', this._resizeHandler);
     this._render();
   },
 
@@ -1023,9 +1033,15 @@ const Tut = {
     this._cleanup();
     this._hideAllOverlays();
     $('tut-card').style.display = 'none';
+    document.documentElement.style.overflow = '';
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+      this._resizeHandler = null;
+    }
   },
 
   _render() {
+    this._currentEl = null;
     const step = TUT_STEPS[this.idx];
     $('tut-step-num').textContent = `ステップ ${this.idx + 1} / ${TUT_STEPS.length}`;
     $('tut-text').textContent = step.text;
@@ -1037,13 +1053,20 @@ const Tut = {
     if (step.targetSel) {
       const el = document.querySelector(step.targetSel);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => this._spotlight(el, step.action === 'click'), 350);
+        this._currentEl = el;
+        // スクロールを一時解除してinstantでスクロール → 座標確定後にロック
+        document.documentElement.style.overflow = '';
+        el.scrollIntoView({ behavior: 'instant', block: 'center' });
+        requestAnimationFrame(() => {
+          document.documentElement.style.overflow = 'hidden';
+          this._spotlight(el, step.action === 'click');
+        });
         if (step.action === 'click') {
           const handler = () => {
             el.removeEventListener('click', handler, true);
             this._prevClickTarget = null;
             this._prevHandler = null;
+            document.documentElement.style.overflow = ''; // 次画面遷移のため解除
             setTimeout(() => this.next(), 500);
           };
           el.addEventListener('click', handler, true);
@@ -1059,6 +1082,7 @@ const Tut = {
   },
 
   _setFullScreenMask() {
+    document.documentElement.style.overflow = 'hidden';
     const top = $('tut-mask-top');
     if (top) Object.assign(top.style, { display:'block', top:'0', left:'0', right:'0', bottom:'0', height:'' });
     ['tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box'].forEach(id => {
@@ -1066,7 +1090,6 @@ const Tut = {
     });
     const hb = $('tut-hole-blocker');
     if (hb) hb.style.display = 'none';
-    // ターゲットなし → カードを画面中央に戻す
     const card = $('tut-card');
     if (card) Object.assign(card.style, {
       top: '50%', left: '50%', right: 'auto', bottom: 'auto',
@@ -1111,24 +1134,31 @@ const Tut = {
       }
     }
 
-    // スポットライト対象と重ならないようにカードを上/下に逃がす
+    // スペース計算でカードをスポットライトと重ならない位置に配置
     const card = $('tut-card');
     if (card) {
       const vh = window.innerHeight;
-      const spotMidY = (top + bottom) / 2;
-      if (spotMidY < vh / 2) {
-        // 対象が画面上半分 → カードを下に
+      const cardH = 210;
+      const spaceBelow = vh - bottom;
+      const spaceAbove = top;
+      if (spaceBelow >= cardH + 24) {
         Object.assign(card.style, {
-          top: 'auto', bottom: '24px',
+          top: (bottom + 16) + 'px', bottom: 'auto',
+          left: '16px', right: '16px',
+          transform: 'none', width: 'auto'
+        });
+      } else if (spaceAbove >= cardH + 24) {
+        const cardTop = Math.max(60, top - cardH - 16);
+        Object.assign(card.style, {
+          top: cardTop + 'px', bottom: 'auto',
           left: '16px', right: '16px',
           transform: 'none', width: 'auto'
         });
       } else {
-        // 対象が画面下半分 → カードを上（ヘッダー直下）に
+        // 上下ともスペース不足 → 中央（フォールバック）
         Object.assign(card.style, {
-          top: '76px', bottom: 'auto',
-          left: '16px', right: '16px',
-          transform: 'none', width: 'auto'
+          top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+          transform: 'translate(-50%, -50%)', width: 'calc(100% - 32px)'
         });
       }
     }
