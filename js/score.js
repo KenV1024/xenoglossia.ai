@@ -1,13 +1,18 @@
 // 採点・ハイライト（英語=単語一致 / 日本語=文字バイグラムDice係数）
 const Score = {
 
+  // [placeholder] を除去（未入力テンプレート部分を採点対象外にする）
+  _stripBrackets(s) {
+    return s.replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim();
+  },
+
   // ---- 英語 ----
   normEnWords(s) {
     return s.toLowerCase().replace(/[.,!?;:'"()\-]/g, '').split(/\s+/).filter(Boolean);
   },
 
   scoreEn(original, recognized) {
-    const orig = this.normEnWords(original);
+    const orig = this.normEnWords(this._stripBrackets(original));
     const rec = this.normEnWords(recognized);
     if (!orig.length) return 0;
     let hits = 0;
@@ -36,7 +41,7 @@ const Score = {
   },
 
   scoreJa(original, recognized) {
-    const a = this.normJa(original);
+    const a = this.normJa(this._stripBrackets(original));
     const b = this.normJa(recognized);
     if (!a.length) return 0;
     if (a.length === 1) return b.includes(a) ? 100 : 0;
@@ -61,16 +66,22 @@ const Score = {
   // ---- ハイライト ----
   highlightEn(original, recognized) {
     const normWord = w => w.toLowerCase().replace(/[.,!?;:'"()\-]/g, '');
-    const tokens = original.split(/(\s+)/);
+    // [placeholder] を分割して別処理
+    const parts = original.split(/(\[[^\]]*\])/);
     const recNorm = this.normEnWords(recognized);
     const used = new Set();
-    return tokens.map(tok => {
-      if (/^\s+$/.test(tok)) return tok;
-      const norm = normWord(tok);
-      if (!norm) return escHtml(tok);
-      const idx = recNorm.findIndex((w, i) => w === norm && !used.has(i));
-      if (idx !== -1) { used.add(idx); return `<span class="word-hit">${escHtml(tok)}</span>`; }
-      return `<span class="word-miss">${escHtml(tok)}</span>`;
+    return parts.map(part => {
+      if (part.startsWith('[') && part.endsWith(']')) {
+        return `<span class="word-placeholder">${escHtml(part)}</span>`;
+      }
+      return part.split(/(\s+)/).map(tok => {
+        if (/^\s+$/.test(tok)) return tok;
+        const norm = normWord(tok);
+        if (!norm) return escHtml(tok);
+        const idx = recNorm.findIndex((w, i) => w === norm && !used.has(i));
+        if (idx !== -1) { used.add(idx); return `<span class="word-hit">${escHtml(tok)}</span>`; }
+        return `<span class="word-miss">${escHtml(tok)}</span>`;
+      }).join('');
     }).join('');
   },
 

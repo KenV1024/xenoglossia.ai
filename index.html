@@ -462,7 +462,7 @@
 <div class="screen" id="screen-run">
   <div class="container">
     <div class="practice-top">
-      <button class="back-btn" id="run-back-btn" onclick="showScreen('list')">← 練習一覧へ</button>
+      <button class="back-btn" id="run-back-btn" onclick="showScreen('list')">← チャンク一覧へ</button>
       <span class="chunk-counter">
         <span id="run-title">通し練習</span>
         <span class="best-score-tag" id="run-best-tag"></span>
@@ -484,6 +484,11 @@
       </button>
     </div>
 
+    <div id="run-placeholder-hint" style="display:none; background:#FEF9C3; border:1px solid #FDE047; border-radius:8px; padding:8px 12px; margin-bottom:10px; font-size:13px; color:#854D0E;">
+      ⚠️ <b>[ ] 内はプレースホルダーです。</b>自分の名前・情報に書き換えて保存してから練習しましょう。採点では [ ] 部分は除外されます。
+    </div>
+
+    <div class="run-record-hint" id="run-record-hint">英語を話し終わったら、もう一度ボタンを押すと採点されます</div>
     <button class="btn-full-record" id="run-record-btn" onclick="toggleRunRecord()">
       <span class="rec-icon">🎤</span>
       <span id="run-record-label">録音する</span>
@@ -506,6 +511,12 @@
         <div class="score-number" id="run-score-number">—</div>
       </div>
       <div class="score-comment" id="run-score-comment"></div>
+
+      <div id="run-after-guide" style="display:none; margin-top:20px; border-top:1px solid #E5E7EB; padding-top:16px;">
+        <div style="font-size:13px; color:#6B7280; margin-bottom:10px;">次のステップ</div>
+        <button class="btn btn-secondary" style="margin-bottom:8px;" onclick="toggleRunRecord()">🔁 もう一度録音する</button>
+        <button class="btn btn-primary" id="run-topic-list-btn" style="display:none;" onclick="backToTopicListFromRun()">📋 自己紹介一覧に戻る</button>
+      </div>
     </div>
 
     <div class="nav-buttons">

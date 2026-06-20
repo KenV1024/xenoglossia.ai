@@ -1518,6 +1518,7 @@ function bcPrev() {
 }
 
 let _silenceTimer = null;
+let _runSilenceTimer = null;
 
 function showSilenceHint() {
   const sh = $('silence-hint');
@@ -1644,6 +1645,10 @@ function renderRun() {
   $('run-interim-box').classList.remove('visible');
   $('run-interim').textContent = '';
   setRunRecordUI(false);
+  const afterGuide = $('run-after-guide');
+  if (afterGuide) afterGuide.style.display = 'none';
+  const phHint = $('run-placeholder-hint');
+  if (phHint) phHint.style.display = /\[[^\]]*\]/.test(runStepText()) ? 'block' : 'none';
 
   const prev = App.scores[stepKey(step)];
   const tag = $('run-best-tag');
@@ -1683,6 +1688,7 @@ function playRunSlow() {
 
 function toggleRunRecord() {
   if (runRecognizer && runRecognizer.active) {
+    clearTimeout(_runSilenceTimer);
     runRecognizer.stop();
     return;
   }
@@ -1699,17 +1705,30 @@ function startRunRecording() {
   $('run-interim-box').classList.add('visible');
   $('run-result-area').classList.remove('visible');
 
+  const SILENCE_MS = 5000;
+  const resetSilenceTimer = () => {
+    clearTimeout(_runSilenceTimer);
+    _runSilenceTimer = setTimeout(() => {
+      if (runRecognizer && runRecognizer.active) runRecognizer.stop();
+    }, SILENCE_MS);
+  };
+
   runRecognizer = Speech.createRecognizer({
     lang: App.lang,
     continuous: true,
-    onInterim: (t) => { $('run-interim').textContent = t; },
+    onInterim: (t) => {
+      $('run-interim').textContent = t;
+      if (t) resetSilenceTimer();
+    },
     onError: (err) => {
+      clearTimeout(_runSilenceTimer);
       if (err === 'not-allowed') {
         showMicBlockedModal();
         setRunRecordUI(false);
       }
     },
     onEnd: (transcript) => {
+      clearTimeout(_runSilenceTimer);
       setRunRecordUI(false);
       $('run-interim-box').classList.remove('visible');
       if (transcript) finalizeRunScore(transcript);
@@ -1717,11 +1736,14 @@ function startRunRecording() {
   });
   runRecognizer.start();
   setRunRecordUI(true);
+  resetSilenceTimer();
 }
 
 function setRunRecordUI(rec) {
   $('run-record-btn').classList.toggle('recording', rec);
-  $('run-record-label').textContent = rec ? u('停止する（採点します）', 'Stop (scoring…)') : u('録音する', 'Record');
+  $('run-record-label').textContent = rec ? u('⏹ 採点する', '⏹ Stop & Score') : u('録音する', 'Record');
+  const hint = $('run-record-hint');
+  if (hint) hint.style.display = rec ? 'none' : 'block';
 }
 
 function finalizeRunScore(transcript) {
@@ -1748,6 +1770,19 @@ function finalizeRunScore(transcript) {
   $('run-score-number').style.color = fb.color;
   $('run-score-comment').textContent = fb.comment;
   $('run-score-comment').style.color = fb.color;
+
+  // 全文通し完了後: 導線を表示
+  if (step.type === 'full') {
+    const guide = $('run-after-guide');
+    if (guide) guide.style.display = 'block';
+    const topicBtn = $('run-topic-list-btn');
+    if (topicBtn) topicBtn.style.display = App.topicId ? 'block' : 'none';
+  }
+}
+
+function backToTopicListFromRun() {
+  _maybeUpdateTopicProgress();
+  showTopics();
 }
 
 // ===== AI Scene =====
