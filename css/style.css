@@ -1145,6 +1145,69 @@ textarea::placeholder { color: #94A3B8; }
   justify-content: flex-end;
 }
 
+/* ===== 練習状態バー ===== */
+.practice-state-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 14px; font-weight: 700;
+}
+.psb-speaking {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1.5px solid #BFDBFE;
+}
+.psb-recording {
+  background: #FFF1F2;
+  color: #BE123C;
+  border: 1.5px solid #FECDD3;
+}
+.psb-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: psb-blink 1s infinite;
+}
+.psb-speaking .psb-dot { background: #3B82F6; }
+.psb-recording .psb-dot { background: #F43F5E; }
+@keyframes psb-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ===== 沈黙ヒント ===== */
+.silence-hint {
+  background: #FFFBEB;
+  border: 1.5px solid #FCD34D;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.sh-header {
+  font-size: 13px; font-weight: 700; color: #92400E;
+  margin-bottom: 10px;
+}
+.sh-btn {
+  display: block; width: 100%;
+  background: white; border: 1px solid #FDE68A;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: #78350F; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  text-align: left; margin-bottom: 6px;
+  transition: background 0.15s;
+}
+.sh-btn:hover { background: #FEF3C7; }
+.sh-close {
+  display: block; width: 100%;
+  background: none; border: none;
+  font-size: 12px; color: #94A3B8;
+  cursor: pointer; padding: 4px 0 0;
+  font-family: inherit; text-align: right;
+}
+
 /* ===== マイク拒否リカバリーモーダル ===== */
 .mic-blocked-steps { margin-bottom: 16px; }
 .mic-blocked-section {

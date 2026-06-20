@@ -257,6 +257,11 @@
       <div class="progress-fill" id="practice-progress-fill" style="width:0%"></div>
     </div>
 
+    <div id="practice-state-bar" class="practice-state-bar" style="display:none;">
+      <span class="psb-dot"></span>
+      <span id="psb-text"></span>
+    </div>
+
     <div class="completion-banner" id="completion-banner">
       <div class="congrats-icon">🎉</div>
       <h3 id="completion-h3">すべての練習が完了！</h3>
@@ -375,6 +380,13 @@
         <div class="score-number" id="score-number">—</div>
       </div>
       <div class="score-comment" id="score-comment"></div>
+    </div>
+
+    <div id="silence-hint" class="silence-hint" style="display:none;">
+      <div class="sh-header">💡 困ったときは</div>
+      <button class="sh-btn" onclick="playNormal(); hideSilenceHint()">🔊 もう一度AIの発音を聞く</button>
+      <button class="sh-btn" onclick="hideSilenceHint(); toggleRecord()">🎤 もう一度話す</button>
+      <button class="sh-close" onclick="hideSilenceHint()">閉じる ✕</button>
     </div>
 
     <div class="nav-buttons">

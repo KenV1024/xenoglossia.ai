@@ -71,6 +71,24 @@ function _setSpeakBtns(screenId, playing) {
       btn.classList.remove('speaking');
     }
   });
+  if (screenId === 'screen-practice') setPracticeState(playing ? 'speaking' : 'idle');
+}
+
+function setPracticeState(state) {
+  const bar = $('practice-state-bar');
+  if (!bar) return;
+  if (state === 'speaking') {
+    bar.style.display = 'flex';
+    bar.className = 'practice-state-bar psb-speaking';
+    $('psb-text').textContent = u('AIが発音中...', 'AI is speaking...');
+  } else if (state === 'recording') {
+    bar.style.display = 'flex';
+    bar.className = 'practice-state-bar psb-recording';
+    $('psb-text').textContent = u('🎤 あなたの番です　話してください', '🎤 Your turn — speak now');
+  } else {
+    bar.style.display = 'none';
+    bar.className = 'practice-state-bar';
+  }
 }
 
 function stopAllAudio() {
@@ -99,6 +117,9 @@ function stopAllAudio() {
   if (_shadowRecognizer) { _shadowRecognizer.abort(); _shadowRecognizer = null; }
   const shBtn = $('shadow-btn');
   if (shBtn) { shBtn.classList.remove('active'); $('shadow-label').textContent = u('シャドーイング練習（AIと同時に発音）', 'Shadowing Drill'); }
+  clearTimeout(_silenceTimer);
+  hideSilenceHint();
+  setPracticeState('idle');
 }
 
 // ===== UI language helpers =====
@@ -1181,8 +1202,21 @@ function bcPrev() {
   bcPlay();
 }
 
+let _silenceTimer = null;
+
+function showSilenceHint() {
+  const sh = $('silence-hint');
+  if (sh) sh.style.display = 'block';
+}
+function hideSilenceHint() {
+  const sh = $('silence-hint');
+  if (sh) sh.style.display = 'none';
+}
+
 function toggleRecord() {
   if (chunkRecognizer && chunkRecognizer.active) {
+    clearTimeout(_silenceTimer);
+    hideSilenceHint();
     chunkRecognizer.stop();
     VoiceRecorder.stop();
     setRecordUI(false);
@@ -1208,11 +1242,14 @@ function startChunkRecording() {
     lang: App.lang,
     continuous: false,
     onInterim: (t) => {
+      if (t) { clearTimeout(_silenceTimer); hideSilenceHint(); }
       $('result-text').textContent = '"' + t + '"';
       $('chunk-result-legend').style.display = 'none';
       $('result-area').classList.add('visible');
     },
     onFinal: (transcript) => {
+      clearTimeout(_silenceTimer);
+      hideSilenceHint();
       VoiceRecorder.stop();
       const score = Score.calc(target, transcript, App.lang);
       $('result-text').innerHTML = Score.highlight(target, transcript, App.lang);
@@ -1227,25 +1264,31 @@ function startChunkRecording() {
       $('myvoice-btn').disabled = !VoiceRecorder.hasRecording();
     },
     onError: (err) => {
+      clearTimeout(_silenceTimer);
+      hideSilenceHint();
       VoiceRecorder.stop();
       setRecordUI(false);
       if (err === 'no-speech') {
         $('result-text').textContent = u('音声が検出されませんでした。もう一度お試しください。', 'No speech detected. Please try again.');
         $('result-area').classList.add('visible');
+        showSilenceHint();
       } else if (err === 'not-allowed') {
         showMicBlockedModal();
       }
     },
-    onEnd: () => { setRecordUI(false); }
+    onEnd: () => { clearTimeout(_silenceTimer); setRecordUI(false); }
   });
   chunkRecognizer.start();
   setRecordUI(true);
+  _silenceTimer = setTimeout(showSilenceHint, 5000);
 }
 
 function setRecordUI(recording) {
   $('record-btn').classList.toggle('recording', recording);
   $('record-label').textContent = recording ? u('停止', 'Stop') : u('録音', 'Record');
   $('rec-indicator').classList.toggle('visible', recording);
+  setPracticeState(recording ? 'recording' : 'idle');
+  if (!recording) hideSilenceHint();
 }
 
 function showChunkScore(score) {
