@@ -1066,6 +1066,12 @@ const Tut = {
     });
     const hb = $('tut-hole-blocker');
     if (hb) hb.style.display = 'none';
+    // ターゲットなし → カードを画面中央に戻す
+    const card = $('tut-card');
+    if (card) Object.assign(card.style, {
+      top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+      transform: 'translate(-50%, -50%)', width: 'calc(100% - 32px)'
+    });
   },
 
   _spotlight(el, isClickable) {
@@ -1101,6 +1107,28 @@ const Tut = {
           top: top + 'px', left: left + 'px',
           width: (right - left) + 'px', height: (bottom - top) + 'px',
           bottom: '', right: ''
+        });
+      }
+    }
+
+    // スポットライト対象と重ならないようにカードを上/下に逃がす
+    const card = $('tut-card');
+    if (card) {
+      const vh = window.innerHeight;
+      const spotMidY = (top + bottom) / 2;
+      if (spotMidY < vh / 2) {
+        // 対象が画面上半分 → カードを下に
+        Object.assign(card.style, {
+          top: 'auto', bottom: '24px',
+          left: '16px', right: '16px',
+          transform: 'none', width: 'auto'
+        });
+      } else {
+        // 対象が画面下半分 → カードを上（ヘッダー直下）に
+        Object.assign(card.style, {
+          top: '76px', bottom: 'auto',
+          left: '16px', right: '16px',
+          transform: 'none', width: 'auto'
         });
       }
     }
