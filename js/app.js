@@ -961,11 +961,11 @@ const TUT_STEPS = [
   // 2: 最初のトピック（名前・出身地）
   { targetSel: '.topic-item:first-child', text: 'トピックの一覧が表示されました。\nまず「名前・出身地」を押してみましょう。', action: 'click', screen: 'topics' },
   // 3: テキスト編集説明
-  { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\nたとえば [Your Name] を自分の名前に変えてみましょう。', action: 'next', screen: 'topics' },
+  { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\n[Your Name] を自分の名前、[Your City] を出身地に変えてみましょう。\n書き換えたら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'topics' },
   // 4: 保存ボタン
   { targetSel: '#topic-save-btn', text: '書き換えたら「保存する」を押してください。\n次回からも保存した文章で練習できます。', action: 'click', screen: 'topics' },
   // 5: 練習するボタン
-  { targetSel: '.topic-detail-card .btn.btn-primary', text: '「このトピックを練習する」を押して、練習画面へ進みましょう。', action: 'click', screen: 'topics' },
+  { targetSel: '#topic-practice-btn', text: '「このトピックを練習する」を押して、練習画面へ進みましょう。', action: 'click', screen: 'topics' },
   // 6: 使い方ヒント（リスト画面）
   { text: '使い方のヒント\n\n✓ チャンク練習 → パラグラフ通し → 全文通し、の順に階段式で練習できます\n✓ まず「ゆっくり再生」で音を確認し、真似して話しましょう\n✓ 録音すると採点され、自分の声の聞き返しもできます\n✓ ゴールは30分のネイティブ会話！', action: 'next', screen: 'list' },
   // 7: チャンクカード①
@@ -1019,7 +1019,7 @@ const Tut = {
     this._resizeHandler = () => {
       if (this.active && this._currentEl) {
         const step = TUT_STEPS[this.idx];
-        this._spotlight(this._currentEl, step.action === 'click');
+        this._spotlight(this._currentEl, step.action === 'click', !!step.allowInteract);
       }
     };
     window.addEventListener('resize', this._resizeHandler);
@@ -1084,7 +1084,7 @@ const Tut = {
         el.scrollIntoView({ behavior: 'instant', block: 'center' });
         requestAnimationFrame(() => {
           this._lockScroll();
-          this._spotlight(el, step.action === 'click');
+          this._spotlight(el, step.action === 'click', !!step.allowInteract);
         });
         if (step.action === 'click') {
           const handler = () => {
@@ -1132,7 +1132,7 @@ const Tut = {
     });
   },
 
-  _spotlight(el, isClickable) {
+  _spotlight(el, isClickable, allowInteract = false) {
     const r = el.getBoundingClientRect();
     const p = 8;
     const top    = Math.max(0, r.top - p);
@@ -1154,7 +1154,7 @@ const Tut = {
 
     const hb = $('tut-hole-blocker');
     if (hb) {
-      if (isClickable) {
+      if (isClickable || allowInteract) {
         hb.style.display = 'none';
       } else {
         Object.assign(hb.style, {
