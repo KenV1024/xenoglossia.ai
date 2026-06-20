@@ -980,10 +980,10 @@ const TUT_STEPS = [
   { targetSel: '.btn-play', text: '「再生」を押してAIの発音を聞いてみましょう。', action: 'click', screen: 'practice' },
   // 12: ゆっくりボタン
   { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice' },
-  // 13: 録音ボタン
-  { targetSel: '.btn-record', text: '「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。', action: 'click', screen: 'practice' },
-  // 14: 発音結果エリア
-  { targetSel: '#result-area', text: '発音が認識されてスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。', action: 'next', screen: 'practice' },
+  // 13: 録音ボタン（テキストも見えるように chunk-display まで含めてハイライト）
+  { targetSel: '.btn-record', topBoundSel: '.chunk-display', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice' },
+  // 14: 発音結果（result-areaは録音後に表示されるため、ターゲット指定なし）
+  { text: '発音が認識されるとスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。\n何度でも練習してスコアを上げましょう！', action: 'next', screen: 'practice' },
   // 15: 自分の声ボタン
   { targetSel: '#myvoice-btn', text: '「自分の声」ボタンで録音を聞き返せます。\n自分の発音を客観的に確認しましょう。', action: 'next', screen: 'practice' },
   // 16: 発音ガイドボタン
@@ -1019,7 +1019,7 @@ const Tut = {
     this._resizeHandler = () => {
       if (this.active && this._currentEl) {
         const step = TUT_STEPS[this.idx];
-        this._spotlight(this._currentEl, step.action === 'click', !!step.allowInteract);
+        this._spotlight(this._currentEl, step.action === 'click', !!step.allowInteract, step.topBoundSel || null);
       }
     };
     window.addEventListener('resize', this._resizeHandler);
@@ -1084,7 +1084,7 @@ const Tut = {
         el.scrollIntoView({ behavior: 'instant', block: 'center' });
         requestAnimationFrame(() => {
           this._lockScroll();
-          this._spotlight(el, step.action === 'click', !!step.allowInteract);
+          this._spotlight(el, step.action === 'click', !!step.allowInteract, step.topBoundSel || null);
         });
         if (step.action === 'click') {
           const handler = () => {
@@ -1132,10 +1132,21 @@ const Tut = {
     });
   },
 
-  _spotlight(el, isClickable, allowInteract = false) {
+  _spotlight(el, isClickable, allowInteract = false, topBoundSel = null) {
     const r = el.getBoundingClientRect();
+    // 要素が非表示（録音結果エリアなど）の場合はフルスクリーンマスクへ
+    if (r.width === 0 && r.height === 0) { this._setFullScreenMask(); return; }
     const p = 8;
-    const top    = Math.max(0, r.top - p);
+    // topBoundSel が指定されていればその要素の上端まで含めてハイライト
+    let rawTop = r.top;
+    if (topBoundSel) {
+      const topEl = document.querySelector(topBoundSel);
+      if (topEl) {
+        const tr = topEl.getBoundingClientRect();
+        rawTop = Math.min(r.top, tr.top);
+      }
+    }
+    const top    = Math.max(0, rawTop - p);
     const bottom = Math.min(window.innerHeight, r.bottom + p);
     const left   = Math.max(0, r.left - p);
     const right  = Math.min(window.innerWidth, r.right + p);
@@ -1173,7 +1184,23 @@ const Tut = {
       const cardH = 210;
       const spaceBelow = vh - bottom;
       const spaceAbove = top;
-      if (spaceBelow >= cardH + 24) {
+      if (isClickable) {
+        // クリックステップ: カードをターゲット上に絶対に置かない
+        // スペースが大きい側に必ず配置（空間不足でも重ならない方を優先）
+        if (spaceBelow >= spaceAbove) {
+          Object.assign(card.style, {
+            top: (bottom + 12) + 'px', bottom: 'auto',
+            left: '16px', right: '16px',
+            transform: 'none', width: 'auto'
+          });
+        } else {
+          Object.assign(card.style, {
+            top: Math.max(56, top - cardH - 12) + 'px', bottom: 'auto',
+            left: '16px', right: '16px',
+            transform: 'none', width: 'auto'
+          });
+        }
+      } else if (spaceBelow >= cardH + 24) {
         Object.assign(card.style, {
           top: (bottom + 16) + 'px', bottom: 'auto',
           left: '16px', right: '16px',
@@ -1667,6 +1694,18 @@ function renderRun() {
         ? u(`次へ（パラグラフ ${nextStep.p + 1}）→`, `Next (Para ${nextStep.p + 1}) →`)
         : u('次へ（全文通し）→', 'Next (Full) →'))
     : u('次へ →', 'Next →');
+
+  // トピック練習中はバックボタンを「自己紹介一覧に戻る」に変更
+  const runBack = $('run-back-btn');
+  if (runBack) {
+    if (App.topicId) {
+      runBack.textContent = u('← 自己紹介一覧に戻る', '← Back to Topics');
+      runBack.onclick = backToTopicListFromRun;
+    } else {
+      runBack.textContent = u('← チャンク一覧へ', '← Chunk List');
+      runBack.onclick = () => showScreen('list');
+    }
+  }
 }
 
 function playRunNormal() {
