@@ -1021,7 +1021,7 @@ const Tut = {
     this.active = false;
     localStorage.setItem('sc_onboarded', '1');
     this._cleanup();
-    this._hideSpotlight();
+    this._hideAllOverlays();
     $('tut-card').style.display = 'none';
   },
 
@@ -1038,9 +1038,9 @@ const Tut = {
       const el = document.querySelector(step.targetSel);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => this._spotlight(el), 350);
+        setTimeout(() => this._spotlight(el, step.action === 'click'), 350);
         if (step.action === 'click') {
-          const handler = (e) => {
+          const handler = () => {
             el.removeEventListener('click', handler, true);
             this._prevClickTarget = null;
             this._prevHandler = null;
@@ -1051,42 +1051,67 @@ const Tut = {
           this._prevHandler = handler;
         }
       } else {
-        this._hideSpotlight();
+        this._setFullScreenMask();
       }
     } else {
-      this._hideSpotlight();
+      this._setFullScreenMask();
     }
   },
 
-  _spotlight(el) {
-    const r = el.getBoundingClientRect();
-    const p = 8;
-    const cardH = 180; // approximate tut-card height
-    const safeBottom = window.innerHeight - cardH - 16;
-
-    const top = Math.max(0, r.top - p);
-    const bottom = Math.min(safeBottom, r.bottom + p);
-    const left = Math.max(0, r.left - p);
-    const right = Math.min(window.innerWidth, r.right + p);
-
-    const st = (id, css) => { const el = $(id); if(el) Object.assign(el.style, css); };
-
-    st('tut-mask-top',    { display:'block', top:'0', left:'0', right:'0', height: top + 'px' });
-    st('tut-mask-bottom', { display:'block', top: bottom + 'px', left:'0', right:'0', bottom:'0', height:'' });
-    st('tut-mask-left',   { display:'block', top: top+'px', left:'0', width: left+'px', height: (bottom-top)+'px', bottom:'' });
-    st('tut-mask-right',  { display:'block', top: top+'px', left: right+'px', right:'0', width:'', height: (bottom-top)+'px', bottom:'' });
-
-    const hb = $('tut-highlight-box');
-    if (hb) Object.assign(hb.style, {
-      display: 'block',
-      top: top + 'px', left: left + 'px',
-      width: (right - left) + 'px', height: (bottom - top) + 'px'
+  _setFullScreenMask() {
+    const top = $('tut-mask-top');
+    if (top) Object.assign(top.style, { display:'block', top:'0', left:'0', right:'0', bottom:'0', height:'' });
+    ['tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box'].forEach(id => {
+      const e = $(id); if (e) e.style.display = 'none';
     });
+    const hb = $('tut-hole-blocker');
+    if (hb) hb.style.display = 'none';
   },
 
-  _hideSpotlight() {
-    ['tut-mask-top','tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box']
-      .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
+  _spotlight(el, isClickable) {
+    const r = el.getBoundingClientRect();
+    const p = 8;
+
+    const top    = Math.max(0, r.top - p);
+    const bottom = Math.min(window.innerHeight, r.bottom + p);
+    const left   = Math.max(0, r.left - p);
+    const right  = Math.min(window.innerWidth, r.right + p);
+
+    const st = (id, css) => { const e = $(id); if (e) Object.assign(e.style, css); };
+
+    st('tut-mask-top',    { display:'block', top:'0', left:'0', right:'0', height: top + 'px', bottom:'' });
+    st('tut-mask-bottom', { display:'block', top: bottom + 'px', left:'0', right:'0', bottom:'0', height:'' });
+    st('tut-mask-left',   { display:'block', top: top+'px', left:'0', right:'', width: left+'px', height: (bottom-top)+'px', bottom:'' });
+    st('tut-mask-right',  { display:'block', top: top+'px', left: right+'px', right:'0', width:'', height: (bottom-top)+'px', bottom:'' });
+
+    st('tut-highlight-box', {
+      display: 'block',
+      top: top + 'px', left: left + 'px',
+      width: (right - left) + 'px', height: (bottom - top) + 'px',
+      bottom: '', right: ''
+    });
+
+    const hb = $('tut-hole-blocker');
+    if (hb) {
+      if (isClickable) {
+        hb.style.display = 'none';
+      } else {
+        Object.assign(hb.style, {
+          display: 'block',
+          top: top + 'px', left: left + 'px',
+          width: (right - left) + 'px', height: (bottom - top) + 'px',
+          bottom: '', right: ''
+        });
+      }
+    }
+  },
+
+  _hideAllOverlays() {
+    ['tut-mask-top','tut-mask-bottom','tut-mask-left','tut-mask-right','tut-highlight-box'].forEach(id => {
+      const e = $(id); if (e) e.style.display = 'none';
+    });
+    const hb = $('tut-hole-blocker');
+    if (hb) hb.style.display = 'none';
   },
 
   _cleanup() {

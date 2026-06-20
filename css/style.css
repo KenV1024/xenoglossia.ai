@@ -1350,11 +1350,14 @@ textarea::placeholder { color: #94A3B8; }
 }
 .tut-card {
   position: fixed;
-  bottom: 24px; left: 16px; right: 16px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  max-width: 400px;
   background: white; border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  z-index: 3002;
+  padding: 20px 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  z-index: 3010;
 }
 .tut-step-num {
   font-size: 11px; color: #94A3B8; font-weight: 700;
@@ -1374,4 +1377,10 @@ textarea::placeholder { color: #94A3B8; }
   border: none; border-radius: 10px;
   padding: 10px 22px; font-size: 14px; font-weight: 700;
   cursor: pointer; font-family: inherit;
+}
+#tut-hole-blocker {
+  position: fixed;
+  z-index: 3001;
+  pointer-events: auto;
+  background: transparent;
 }
