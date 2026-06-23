@@ -959,7 +959,7 @@ const TUT_STEPS = [
   // 1: 今すぐ始めるボタン
   { targetSel: '.home-card-hero .btn-hero-start', text: '「自己紹介の練習」から始めましょう。\n「今すぐ始める」ボタンを押してください。', action: 'click', screen: 'home' },
   // 2: 最初のトピック（名前・出身地）
-  { targetSel: '.topic-item:first-child', text: 'トピックの一覧が表示されました。\nまず「名前・出身地」を押してみましょう。', action: 'click', screen: 'topics' },
+  { targetSel: '#topic-list .topic-item', text: 'トピックの一覧が表示されました。\nまず「名前・出身地」を押してみましょう。', action: 'click', screen: 'topics' },
   // 3: テキスト編集説明
   { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\n[Your Name] を自分の名前、[Your City] を出身地に変えてみましょう。\n書き換えたら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'topics' },
   // 4: 保存ボタン
