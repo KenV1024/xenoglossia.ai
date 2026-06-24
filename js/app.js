@@ -961,7 +961,8 @@ const TUT_STEPS = [
   // 2: 最初のトピック（名前・出身地）
   { targetSel: '#topic-list .topic-item', text: 'トピックの一覧が表示されました。\nまず「名前・出身地」を押してみましょう。', action: 'click', screen: 'topics' },
   // 3: テキスト編集説明
-  { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\n[Your Name] を自分の名前、[Your City] を出身地に変えてみましょう。\n書き換えたら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'topics' },
+  { targetSel: '#td-textarea', text: '[ ] の部分を自分の情報に書き換えられます。\n[Your Name] を自分の名前、[Your City] を出身地に変えてみましょう。\n書き換えたら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'topics',
+    cardPos: { top: 'auto', bottom: '16px', left: '16px', right: '16px', transform: 'none', width: 'auto' } },
   // 4: 保存ボタン
   { targetSel: '#topic-save-btn', text: '書き換えたら「保存する」を押してください。\n次回からも保存した文章で練習できます。', action: 'click', screen: 'topics' },
   // 5: 練習するボタン
@@ -981,7 +982,7 @@ const TUT_STEPS = [
   // 12: ゆっくりボタン
   { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice' },
   // 13: 録音ボタン（テキストも見えるように chunk-display まで含めてハイライト）
-  { targetSel: '.btn-record', topBoundSel: '.chunk-display', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice',
+  { targetSel: '.btn-record', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice',
     cardPos: { left: '55%', right: '8px', top: '50%', bottom: 'auto', transform: 'translateY(-50%)', width: 'auto' } },
   // 14: 発音結果（録音後にresult-areaが表示されればそこにスポット。非表示時はフルスクリーン）
   { targetSel: '#result-area', text: '発音が認識されるとスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。\n何度でも練習してスコアを上げましょう！', action: 'next', screen: 'practice' },
