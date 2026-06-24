@@ -72,6 +72,13 @@ const Score = {
     const used = new Set();
     return parts.map(part => {
       if (part.startsWith('[') && part.endsWith(']')) {
+        // ブラケット内を発音済みか照合（例: [Ken] を言えた場合は緑表示）
+        const inner = part.slice(1, -1).trim();
+        const innerNorm = normWord(inner);
+        if (innerNorm) {
+          const idx = recNorm.findIndex((w, i) => w === innerNorm && !used.has(i));
+          if (idx !== -1) { used.add(idx); return `<span class="word-hit">${escHtml(part)}</span>`; }
+        }
         return `<span class="word-placeholder">${escHtml(part)}</span>`;
       }
       return part.split(/(\s+)/).map(tok => {

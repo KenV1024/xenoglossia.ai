@@ -981,9 +981,10 @@ const TUT_STEPS = [
   // 12: ゆっくりボタン
   { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice' },
   // 13: 録音ボタン（テキストも見えるように chunk-display まで含めてハイライト）
-  { targetSel: '.btn-record', topBoundSel: '.chunk-display', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice' },
-  // 14: 発音結果（result-areaは録音後に表示されるため、ターゲット指定なし）
-  { text: '発音が認識されるとスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。\n何度でも練習してスコアを上げましょう！', action: 'next', screen: 'practice' },
+  { targetSel: '.btn-record', topBoundSel: '.chunk-display', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice',
+    cardPos: { left: '55%', right: '8px', top: '50%', bottom: 'auto', transform: 'translateY(-50%)', width: 'auto' } },
+  // 14: 発音結果（録音後にresult-areaが表示されればそこにスポット。非表示時はフルスクリーン）
+  { targetSel: '#result-area', text: '発音が認識されるとスコアが表示されます。\n緑=正しく発音できた部分、赤=認識されなかった部分です。\n何度でも練習してスコアを上げましょう！', action: 'next', screen: 'practice' },
   // 15: 自分の声ボタン
   { targetSel: '#myvoice-btn', text: '「自分の声」ボタンで録音を聞き返せます。\n自分の発音を客観的に確認しましょう。', action: 'next', screen: 'practice' },
   // 16: 発音ガイドボタン
@@ -1020,6 +1021,10 @@ const Tut = {
       if (this.active && this._currentEl) {
         const step = TUT_STEPS[this.idx];
         this._spotlight(this._currentEl, step.action === 'click', !!step.allowInteract, step.topBoundSel || null);
+        if (step.cardPos) {
+          const card = $('tut-card');
+          if (card) Object.assign(card.style, step.cardPos);
+        }
       }
     };
     window.addEventListener('resize', this._resizeHandler);
@@ -1085,6 +1090,10 @@ const Tut = {
         requestAnimationFrame(() => {
           this._lockScroll();
           this._spotlight(el, step.action === 'click', !!step.allowInteract, step.topBoundSel || null);
+          if (step.cardPos) {
+            const card = $('tut-card');
+            if (card) Object.assign(card.style, step.cardPos);
+          }
         });
         if (step.action === 'click') {
           const handler = () => {
@@ -1184,8 +1193,8 @@ const Tut = {
       const cardH = 210;
       const spaceBelow = vh - bottom;
       const spaceAbove = top;
-      if (isClickable) {
-        // クリックステップ: カードをターゲット上に絶対に置かない
+      if (isClickable || allowInteract) {
+        // クリック/インタラクトステップ: カードをターゲット上に絶対に置かない
         // スペースが大きい側に必ず配置（空間不足でも重ならない方を優先）
         if (spaceBelow >= spaceAbove) {
           Object.assign(card.style, {

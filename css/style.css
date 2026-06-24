@@ -753,7 +753,7 @@ textarea::placeholder { color: #94A3B8; }
 /* ===== Word Highlight ===== */
 .word-hit  { background: #DCFCE7; color: #15803D; border-radius: 3px; padding: 0 3px; }
 .word-miss { background: #FEE2E2; color: #B91C1C; border-radius: 3px; padding: 0 3px; text-decoration: line-through; }
-.word-placeholder { background: #F3F4F6; color: #9CA3AF; border-radius: 3px; padding: 0 3px; font-style: italic; }
+.word-placeholder { background: #EFF6FF; color: #3B82F6; border-radius: 3px; padding: 0 3px; font-style: italic; }
 
 /* ===== Run (paragraph / full) Screen ===== */
 .full-text-display { font-size: 17px; line-height: 1.95; color: #1E293B; word-break: break-word; }
