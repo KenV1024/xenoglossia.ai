@@ -978,9 +978,11 @@ const TUT_STEPS = [
   // 10: チャンク①を押す
   { targetSel: '.chunk-card:first-child', text: '①のチャンクを押して練習を始めましょう！', action: 'click', screen: 'list' },
   // 11: 再生ボタン
-  { targetSel: '.btn-play', text: '「再生」を押してAIの発音を聞いてみましょう。', action: 'click', screen: 'practice' },
+  { targetSel: '.btn-play', text: '「再生」を押してAIの発音を聞いてみましょう。', action: 'click', screen: 'practice',
+    cardPos: { left: '55%', right: '8px', top: '50%', bottom: 'auto', transform: 'translateY(-50%)', width: 'auto' } },
   // 12: ゆっくりボタン
-  { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice' },
+  { targetSel: '.btn-slow', text: '「ゆっくり」を押すとゆっくり聞けます。\nしっかり音を確認しましょう。', action: 'click', screen: 'practice',
+    cardPos: { left: '55%', right: '8px', top: '50%', bottom: 'auto', transform: 'translateY(-50%)', width: 'auto' } },
   // 13: 録音ボタン（テキストも見えるように chunk-display まで含めてハイライト）
   { targetSel: '.btn-record', text: 'テキストを見ながら「録音」を押してマイクに向かって話してみましょう。\nブラウザからマイク許可を求められたら「許可」してください。\n話し終わったら「次へ」を押してください。', action: 'next', allowInteract: true, screen: 'practice',
     cardPos: { left: '55%', right: '8px', top: '50%', bottom: 'auto', transform: 'translateY(-50%)', width: 'auto' } },
